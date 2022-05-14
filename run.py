@@ -6,6 +6,8 @@ import sys
 import json
 import datetime
 import math
+import matplotlib.pyplot as plt
+
 
 def log_string(file_descriptor,string):
  file_descriptor.write(string+"\n")
@@ -16,6 +18,7 @@ def pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu
  third_term = 1/( math.exp(mu*taub) * math.exp(lmb*taub*(math.exp(mjd_mu + mjd_sigma**2/2)-1))  )
  return first_term * second_term * third_term
 
+# This function calculates the MJD density
 def pdf_mjd(x, pt, kmax,lmb, tau , mjd_sigma, gbm_sigma, gbm_mu):
  pdfvalue = 0
  for k in range(0,kmax+1):
@@ -43,6 +46,8 @@ def run_simulation():
  mjd_sigma = input_variables['mjd_sigma']
  mjd_lambda = input_variables['mjd_lambda']
 
+ kmax = input_variables['kmax']
+
 
  simulation_output = open("simulation_output", "a")
  
@@ -69,6 +74,7 @@ def run_simulation():
  log_string(simulation_output, "mjd_mu: "+str(mjd_mu))
  log_string(simulation_output, "mjd_sigma: "+str(mjd_sigma))
  log_string(simulation_output, "mjd_lambda: "+str(mjd_lambda))
+ log_string(simulation_output, "kmax: "+str(kmax))
 
  log_string(simulation_output, "------------------------")
  log_string(simulation_output, "Calculating MJD ")
@@ -78,6 +84,20 @@ def run_simulation():
  eq_price_at_t3 = pt3eq_mjd(pstar, mjd_lambda,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu)
 
  log_string(simulation_output, "eq_price_at_t3: "+str(eq_price_at_t3))
+
+ xx = []
+ yy = []
+ for i in range(1,400):
+  yy.append(pdf_mjd(i/100, pt0,kmax, mjd_lambda, taub , mjd_sigma, gbm_sigma, gbm_mu))
+  xx.append(i/100)
+  
+ plt.title("PDF in MJD")
+ plt.xlabel('x')
+ plt.ylabel('probability density')
+ plt.yticks(yy)
+ plt.plot(xx, yy)
+   
+ plt.show()
 
 
  log_string(simulation_output, "------------------------")

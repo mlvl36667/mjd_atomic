@@ -12,5 +12,6 @@
    "pt0": 2,
    "mjd_mu": 0.01,
    "mjd_sigma": 0.02,
-   "mjd_lambda": 1
+   "mjd_lambda": 1,
+   "kmax": 10
 }
