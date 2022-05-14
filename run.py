@@ -224,7 +224,7 @@ def run_simulation():
  plt.clf()
  plt.xlabel(r'$P(t_2)$ ')
  plt.ylabel(r'$U^{cont}_{B}(t_2)$ ')
- plt.yticks(yy6)
+ plt.yticks(yy5)
 # plt.plot(xx, yy)
  plt.plot(xx2, yy5)
  plt.plot(xx2, yy4, label=r'$ \lambda$ = 0.4', color="red")
