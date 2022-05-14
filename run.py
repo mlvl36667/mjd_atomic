@@ -211,18 +211,18 @@ def run_simulation():
  yy3 = []
  yy4 = []
  yy5 = []
- for i in range(1,35):
-  yy1.append(success_rate_MJD_integrand(i/10,2, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.05, taua, mjd_sigma, gbm_sigma, gbm_mu))
-  yy2.append(success_rate_MJD_integrand(i/10,2, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.1, taua, mjd_sigma, gbm_sigma, gbm_mu))
-  yy3.append(success_rate_MJD_integrand(i/10,2, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.3, taua, mjd_sigma, gbm_sigma, gbm_mu))
-  yy4.append(success_rate_MJD_integrand(i/10,2, ra, epsilonb,0     , alphaa, taub, pt0, kmax, 0, taua, 0, gbm_sigma, gbm_mu))
-  yy5.append(pdf_bs(i/10, 2, taub, gbm_sigma, gbm_mu))
-  xx2.append(i/10)
+ for i in range(10,350):
+  yy1.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.05, taua, mjd_sigma, gbm_sigma, gbm_mu))
+  yy2.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.1, taua, mjd_sigma, gbm_sigma, gbm_mu))
+  yy3.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.3, taua, mjd_sigma, gbm_sigma, gbm_mu))
+  yy4.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,0     , alphaa, taub, pt0, kmax, 0, taua, 0, gbm_sigma, gbm_mu))
+  yy5.append(pdf_bs(i/100, 2.4, taub, gbm_sigma, gbm_mu))
+  xx2.append(i/100)
 
  plt.clf()
- plt.xlabel(r'$P(t_2)$ ')
- plt.ylabel(r'Utility')
- plt.yticks(np.arange(0.5, max(yy4)+1, 0.5))
+ plt.xlabel(r'$P_{t_2}$ ')
+ plt.ylabel(r'$P(P_{t_2},P_{t_1},\tau_a) [1 - C(P_{t_3}(P^{*}),P_{t_2},\tau_b)] $')
+ plt.yticks(np.arange(0.5, max(yy4)+1, 0.2))
  plt.grid(axis='y', color='0.95')
  plt.plot(xx2, yy4, label="Black-Scholes", color="black")
  plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.05', color="green")
