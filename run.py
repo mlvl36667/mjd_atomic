@@ -16,11 +16,12 @@ def pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu
  third_term = 1/( math.exp(mu*taub) * math.exp(lmb*taub*(math.exp(mjd_mu + mjd_sigma**2/2)-1))  )
  return first_term * second_term * third_term
 
-def pdf_mjd(kmax,lmb, tau , mjd_sigma):
+def pdf_mjd(x, pt, kmax,lmb, tau , mjd_sigma, gbm_sigma, gbm_mu):
  pdfvalue = 0
  for k in range(0,kmax+1):
-  pdfvalue = pdfvalue + (lmb*tau)**k / math.factorial(k) * math.exp(-lmb * tau ) * 1/(math.sqrt(2*math.pi)* (math.sqrt(k)) * mjd_sigma )
-  
+  normal_term = math.exp((-1/2)*( ( math.log(x/pt) - k*mjd_sigma - tau*(gbm_mu - gbm_sigma**2/2) ) / (math.sqrt(k)*mjd_sigma + math.sqrt(tau) * gbm_sigma) )**2)
+  pdfvalue = pdfvalue + (lmb*tau)**k / math.factorial(k) * math.exp(-lmb * tau ) * 1/(math.sqrt(2*math.pi)*(math.sqrt(k)*mjd_sigma + math.sqrt(tau) * gbm_sigma))*normal_term/x
+ return pdfvalue
 
 def run_simulation():
  simulation_input = open('simulation_input.json')
