@@ -227,8 +227,8 @@ def run_simulation():
  plt.yticks(yy2)
 # plt.plot(xx, yy)
  plt.plot(xx2, yy5)
- plt.plot(xx2, yy4, label="lambda = 0.4")
- plt.plot(xx2, yy1, label="lambda = 0.05")
+ plt.plot(xx2, yy4, label=r'$ \lambda$ = 0.4')
+ plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.05')
  plt.plot(xx2, yy6, label="Black-Scholes")
  plt.legend()
    
@@ -249,7 +249,7 @@ def run_simulation():
  plt.ylabel('SR(P*)')
  plt.yticks(yy2)
 # plt.plot(xx, yy)
- plt.plot(xx2, yy1, label="lambda = 0.4")
+ plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.4')
  plt.plot(xx2, yy6, label="Black-Scholes")
  plt.legend()
    
