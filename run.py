@@ -215,10 +215,12 @@ def run_simulation():
  yy4 = []
  yy5 = []
  yy6 = []
+ yy7 = []
  for i in range(1,35):
-  yy1.append(ut2bcontMJD(2.4, i/10, kmax, 0.05, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
-  yy4.append(ut2bcontMJD(2.4, i/10, kmax, 0.4, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
-  yy6.append(ut2bcontMJD(2.4, i/10, kmax, 0.00001, taub, 0.00001, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, 0.00001, alphaa))
+  yy1.append(ut2bcontMJD(2, i/10, kmax, 0.05, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy4.append(ut2bcontMJD(2, i/10, kmax, 0.1, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy7.append(ut2bcontMJD(2, i/10, kmax, 0.3, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy6.append(ut2bcontMJD(2, i/10, kmax, 0.00001, taub, 0.00001, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, 0.00001, alphaa))
   yy5.append(i/10)
   xx2.append(i/10)
 
@@ -229,8 +231,9 @@ def run_simulation():
  plt.grid(axis='y', color='0.95')
 # plt.plot(xx, yy)
  plt.plot(xx2, yy5)
- plt.plot(xx2, yy4, label=r'$ \lambda$ = 0.4', color="red")
  plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.05', color="green")
+ plt.plot(xx2, yy4, label=r'$ \lambda$ = 0.1', color="red")
+ plt.plot(xx2, yy7, label=r'$ \lambda$ = 0.3', color="purple")
  plt.plot(xx2, yy6, label="Black-Scholes", color="black")
  plt.legend(title=r'$U^{cont}_{B}(t_2)$')
    
@@ -241,9 +244,11 @@ def run_simulation():
  yy1 = []
  yy2 = []
  yy6 = []
+ yy7 = []
  for i in range(15,30):
-  yy1.append(success_rate_MJD(i/10, pt0, kmax, 0.4, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
+  yy1.append(success_rate_MJD(i/10, pt0, kmax, 0.1, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
   yy2.append(success_rate_MJD(i/10, pt0, kmax, 0.05, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
+  yy7.append(success_rate_MJD(i/10, pt0, kmax, 0.3, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
   yy6.append(success_rate_MJD(i/10, pt0, kmax, 0.000001, taua, 0.00001, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  0.00001, alphaa))
   xx2.append(i/10)
 
@@ -253,8 +258,9 @@ def run_simulation():
  plt.grid(axis='y', color='0.95')
  plt.yticks(np.arange(0.1, max(yy6)+0.1, 0.1))
 # plt.plot(xx, yy)
- plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.4', color="red")
  plt.plot(xx2, yy2, label=r'$ \lambda$ = 0.05', color="green")
+ plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.1', color="red")
+ plt.plot(xx2, yy7, label=r'$ \lambda$ = 0.3', color="purple")
  plt.plot(xx2, yy6, label="Black-Scholes", color="black")
  plt.legend()
    
