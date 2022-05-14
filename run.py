@@ -215,7 +215,7 @@ def run_simulation():
  yy4 = []
  yy5 = []
  yy6 = []
- for i in range(1,30):
+ for i in range(1,35):
   yy1.append(ut2bcontMJD(2.4, i/10, kmax, 0.05, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
   yy4.append(ut2bcontMJD(2.4, i/10, kmax, 0.4, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
   yy6.append(ut2bcontMJD(2.4, i/10, kmax, 0.00001, taub, 0.00001, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, 0.00001, alphaa))
@@ -224,7 +224,7 @@ def run_simulation():
 
  plt.clf()
  plt.xlabel(r'$P(t_2)$ ')
- plt.ylabel(r'$U^{cont}_{B}(t_2)$ ')
+ plt.ylabel(r'Utility')
  plt.yticks(np.arange(0.5, max(yy5), 0.5))
  plt.grid(axis='y', color='0.95')
 # plt.plot(xx, yy)
@@ -232,7 +232,7 @@ def run_simulation():
  plt.plot(xx2, yy4, label=r'$ \lambda$ = 0.4', color="red")
  plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.05', color="green")
  plt.plot(xx2, yy6, label="Black-Scholes", color="black")
- plt.legend()
+ plt.legend(title=r'$U^{cont}_{B}(t_2)$')
    
  plt.show()
  plt.savefig('ut2bcont.pgf')
