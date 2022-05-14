@@ -13,6 +13,31 @@ from scipy.integrate import quad
 def log_string(file_descriptor,string):
  file_descriptor.write(string+"\n")
 
+def success_rate_MJD_integrand(x,pstar, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, lmb, taua, mjd_sigma, gbm_sigma, gbm_mu):
+ return pdf_mjd(x, pt0, kmax, lmb, taua, mjd_sigma, gbm_sigma, gbm_mu)*(1-cdf_mjd( pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu), x, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu))
+
+def calculate_pt2(pstar, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa):
+ found_low = False
+ return_value = [0,0]
+ for i in range(10,400):
+  funct_value = ut2bcontMJD(pstar, i/100, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa)
+
+  if(not found_low and abs(funct_value - i/100) > 0.2):
+   found_low = True
+   return_value.append(i/100)
+
+  if(found_low and abs(funct_value - i/100) < 0.2):
+   return_value.append(i/100)
+
+ return return_value
+ 
+def success_rate_MJD(pstar, pt0, kmax, lmb, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa ):
+
+ pt2  = calculate_pt2(pstar, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa)
+ pt2_low = pt2[0]
+ pt2_high = pt2[1]
+
+ return quad(success_rate_MJD_integrand, pt2_low, pt2_high, args=(pstar,ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, lmb, taua, mjd_sigma, gbm_sigma, gbm_mu))[0]
 def mjd_expectation(tau, pt, lmb,  mjd_mu, mjd_sigma, gbm_mu):
  return pt*math.exp(gbm_mu*tau)*math.exp( lmb * tau* (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
 
@@ -196,6 +221,25 @@ def run_simulation():
    
  plt.show()
  
+ xx2 = []
+ yy1 = []
+ yy6 = []
+ for i in range(15,40):
+  yy1.append(success_rate_MJD(i/10, pt0, kmax, 0.05, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
+  yy6.append(success_rate_MJD(i/10, pt0, kmax, 0.000001, taua, 0.00001, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  0.00001, alphaa))
+  xx2.append(i/10)
+
+ plt.title("Ut2bcont in MJD")
+ plt.xlabel('P(t2)')
+ plt.ylabel('Utility')
+ plt.yticks(yy2)
+# plt.plot(xx, yy)
+ plt.plot(xx2, yy5)
+ plt.plot(xx2, yy1, label="λ = 0.2")
+ plt.plot(xx2, yy6, label="Black-Scholes")
+ plt.legend()
+   
+ plt.show()
 
 
  log_string(simulation_output, "------------------------")
