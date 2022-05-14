@@ -221,15 +221,15 @@ def run_simulation():
   yy5.append(i/10)
   xx2.append(i/10)
 
- plt.title("Ut2bcont in MJD and BS")
- plt.xlabel('P(t2)')
- plt.ylabel('Utility')
+ plt.clf()
+ plt.xlabel(r'$P(t_2)$ ')
+ plt.ylabel(r'$U^{cont}_{B}(t_2)$ ')
  plt.yticks(yy2)
 # plt.plot(xx, yy)
  plt.plot(xx2, yy5)
- plt.plot(xx2, yy4, label=r'$ \lambda$ = 0.4')
- plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.05')
- plt.plot(xx2, yy6, label="Black-Scholes")
+ plt.plot(xx2, yy4, label=r'$ \lambda$ = 0.4', color="red")
+ plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.05', color="green")
+ plt.plot(xx2, yy6, label="Black-Scholes", color="black")
  plt.legend()
    
  plt.show()
@@ -237,20 +237,22 @@ def run_simulation():
  
  xx2 = []
  yy1 = []
+ yy2 = []
  yy6 = []
  for i in range(15,30):
   yy1.append(success_rate_MJD(i/10, pt0, kmax, 0.4, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
+  yy2.append(success_rate_MJD(i/10, pt0, kmax, 0.05, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
   yy6.append(success_rate_MJD(i/10, pt0, kmax, 0.000001, taua, 0.00001, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  0.00001, alphaa))
   xx2.append(i/10)
 
  plt.clf()
- plt.title("Success rate in MJD and BS")
- plt.xlabel('P*')
- plt.ylabel('SR(P*)')
+ plt.xlabel(r'$P^{*}$')
+ plt.ylabel('$SR(P^{*})$')
  plt.yticks(yy2)
 # plt.plot(xx, yy)
- plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.4')
- plt.plot(xx2, yy6, label="Black-Scholes")
+ plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.4', color="red")
+ plt.plot(xx2, yy2, label=r'$ \lambda$ = 0.05', color="green")
+ plt.plot(xx2, yy6, label="Black-Scholes", color="black")
  plt.legend()
    
  plt.show()
