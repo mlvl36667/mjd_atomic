@@ -191,6 +191,7 @@ def run_simulation():
  plt.plot(xx2, yy2, label="P* = 1.6")
  plt.plot(xx2, yy4, label="P* = 2.0")
  plt.plot(xx2, yy5, label="P* = 2.4")
+ plt.legend()
    
  plt.show()
  
