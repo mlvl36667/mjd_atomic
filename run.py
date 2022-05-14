@@ -13,20 +13,20 @@ from scipy.integrate import quad
 def log_string(file_descriptor,string):
  file_descriptor.write(string+"\n")
 
-def mjd_expectation(tau, pt, lmb,  mjd_mu, mjd_sigma):
- return pt*math.exp(mu*tau)*math.exp( lmb * tau* (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
+def mjd_expectation(tau, pt, lmb,  mjd_mu, mjd_sigma, gbm_mu):
+ return pt*math.exp(gbm_mu*tau)*math.exp( lmb * tau* (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
 
-def ut2bcontMJD_integrand(x,taub, rb, pt2, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu):
- ut3bstop = mjd_expectation(2*taub,x)/math.exp(rb*2*taub)
- return pdf_mjd(x, pt2, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu)*ut3bstop
+def ut2bcontMJD_integrand(x,taub, rb, pt2, kmax, lmb, mjd_sigma, gbm_sigma, gbm_mu, mjd_mu):
+ ut3bstop = mjd_expectation(2*taub,x, lmb,  mjd_mu, mjd_sigma, gbm_mu)/math.exp(rb*2*taub)
+ return pdf_mjd(x, pt2, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu)*ut3bstop
 
-def ut2bcontMJD(pstar, pt, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab):
+def ut2bcontMJD(pstar, pt2, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa):
 
  ut3bcont = pstar*(1+alphab)/(math.exp(rb*(epsilonb+ra) ))
 
- first_term = 1 - cdf_mjd(pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu), pt2, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu ) * ut3bcont
+ first_term = 1 - cdf_mjd(pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu), pt2, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu ) * ut3bcont
 
- second_term = quad(ut2bcontMJD_integrand, 0, pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu), args=(taub, rb, pt2, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu))[0]
+ second_term = quad(ut2bcontMJD_integrand, 0, pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu), args=(taub, rb, pt2, kmax, lmb, mjd_sigma, gbm_sigma, gbm_mu, mjd_mu))[0]
 
  return (first_term + second_term) /  math.exp(rb*taub)
 
@@ -164,14 +164,13 @@ def run_simulation():
  xx2 = []
  yy2 = []
  for i in range(1,50):
-  yy2.append(ut2bcontMJD(2, i, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab))
+  yy2.append(ut2bcontMJD(2, i, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
   xx2.append(i/10)
   
  plt.title("Ut2bcont in MJD")
  plt.xlabel('x')
  plt.ylabel('Ut2bcont')
  plt.yticks(yy2)
- plt.plot(xx, yy)
  plt.plot(xx2, yy2)
    
  plt.show()
