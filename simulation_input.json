@@ -10,8 +10,8 @@
    "ra": 0.01,
    "rb": 0.01,
    "pt0": 2,
-   "mjd_mu": 0.001,
-   "mjd_sigma": 0.01,
-   "mjd_lambda": 0.1,
+   "mjd_mu": 0.05,
+   "mjd_sigma": 0.1,
+   "mjd_lambda": 1,
    "kmax": 50
 }

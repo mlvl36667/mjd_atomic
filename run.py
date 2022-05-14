@@ -175,22 +175,23 @@ def run_simulation():
  yy2 = []
  yy4 = []
  yy5 = []
+ yy6 = []
  for i in range(1,40):
-  yy1.append(ut2bcontMJD(1.2, i/10, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
-  yy2.append(ut2bcontMJD(1.6, i/10, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
-  yy4.append(ut2bcontMJD(2, i/10, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
-  yy5.append(ut2bcontMJD(2.4, i/10, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy1.append(ut2bcontMJD(2.4, i/10, kmax, 0.05, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy4.append(ut2bcontMJD(2.4, i/10, kmax, 0.2, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy6.append(ut2bcontMJD(2.4, i/10, kmax, 0.00001, taub, 0.00001, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, 0.00001, alphaa))
+  yy5.append(i/10)
   xx2.append(i/10)
 
  plt.title("Ut2bcont in MJD")
- plt.xlabel('x')
- plt.ylabel('Ut2bcont')
+ plt.xlabel('P(t2)')
+ plt.ylabel('Utility')
  plt.yticks(yy2)
 # plt.plot(xx, yy)
- plt.plot(xx2, yy1, label="P* = 1.2")
- plt.plot(xx2, yy2, label="P* = 1.6")
- plt.plot(xx2, yy4, label="P* = 2.0")
- plt.plot(xx2, yy5, label="P* = 2.4")
+ plt.plot(xx2, yy5)
+ plt.plot(xx2, yy4, label="λ = 0.2")
+ plt.plot(xx2, yy1, label="λ = 0.05")
+ plt.plot(xx2, yy6, label="Black-Scholes")
  plt.legend()
    
  plt.show()
