@@ -164,7 +164,7 @@ def run_simulation():
  xx2 = []
  yy2 = []
  for i in range(1,50):
-  yy2.append(ut2bcontMJD(2, i, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab))
+  yy2.append(ut2bcontMJD(2, i, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab))
   xx2.append(i/10)
   
  plt.title("Ut2bcont in MJD")
