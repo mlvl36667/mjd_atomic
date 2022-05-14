@@ -1,3 +1,7 @@
+#####################################################################
+#### Developed by Bence Ladoczki <ladoczki@tmit.bme.hu> 2022 Maj ####
+####               All rights reserved                           ####
+#####################################################################
 import sys
 import json
 import datetime
@@ -11,6 +15,12 @@ def pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu
  second_term = math.exp(ra*taub)/(1+alphaa)
  third_term = 1/( math.exp(mu*taub) * math.exp(lmb*taub*(math.exp(mjd_mu + mjd_sigma**2/2)-1))  )
  return first_term * second_term * third_term
+
+def pdf_mjd(kmax,lmb, tau , mjd_sigma):
+ pdfvalue = 0
+ for k in range(0,kmax+1):
+  pdfvalue = pdfvalue + (lmb*tau)**k / math.factorial(k) * math.exp(-lmb * tau ) * 1/(math.sqrt(2*math.pi)* (math.sqrt(k)) * mjd_sigma )
+  
 
 def run_simulation():
  simulation_input = open('simulation_input.json')
