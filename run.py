@@ -22,8 +22,13 @@ def pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu
 def pdf_mjd(x, pt, kmax,lmb, tau , mjd_sigma, gbm_sigma, gbm_mu):
  pdfvalue = 0
  for k in range(0,kmax+1):
+  first_term = (lmb*tau)**k / math.factorial(k)
+  second_term = math.exp(-lmb * tau )
+  third_term = 1/( math.sqrt(2*math.pi)*( math.sqrt(k)*mjd_sigma + math.sqrt(tau) * gbm_sigma ) )
+
   normal_term = math.exp((-1/2)*( ( math.log(x/pt) - k*mjd_sigma - tau*(gbm_mu - gbm_sigma**2/2) ) / (math.sqrt(k)*mjd_sigma + math.sqrt(tau) * gbm_sigma) )**2)
-  pdfvalue = pdfvalue + (lmb*tau)**k / math.factorial(k) * math.exp(-lmb * tau ) * 1/(math.sqrt(2*math.pi)*(math.sqrt(k)*mjd_sigma + math.sqrt(tau) * gbm_sigma))*normal_term/x
+
+  pdfvalue = pdfvalue + first_term * second_term * third_term * normal_term/x
  return pdfvalue
 
 def run_simulation():
@@ -88,7 +93,7 @@ def run_simulation():
  xx = []
  yy = []
  for i in range(1,400):
-  yy.append(pdf_mjd(i/100, pt0,kmax, mjd_lambda, taub , mjd_sigma, gbm_sigma, gbm_mu))
+  yy.append(pdf_mjd(i/100, pt0, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu))
   xx.append(i/100)
   
  plt.title("PDF in MJD")
