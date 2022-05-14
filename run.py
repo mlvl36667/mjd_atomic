@@ -3,6 +3,7 @@
 ####               All rights reserved                           ####
 #####################################################################
 import sys
+import numpy as np
 import json
 import datetime
 import math
@@ -214,7 +215,7 @@ def run_simulation():
  yy4 = []
  yy5 = []
  yy6 = []
- for i in range(1,40):
+ for i in range(1,30):
   yy1.append(ut2bcontMJD(2.4, i/10, kmax, 0.05, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
   yy4.append(ut2bcontMJD(2.4, i/10, kmax, 0.4, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
   yy6.append(ut2bcontMJD(2.4, i/10, kmax, 0.00001, taub, 0.00001, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, 0.00001, alphaa))
@@ -224,7 +225,8 @@ def run_simulation():
  plt.clf()
  plt.xlabel(r'$P(t_2)$ ')
  plt.ylabel(r'$U^{cont}_{B}(t_2)$ ')
- plt.yticks(yy5)
+ plt.yticks(np.arange(0.5, max(yy5), 0.5))
+ plt.grid(axis='y', color='0.95')
 # plt.plot(xx, yy)
  plt.plot(xx2, yy5)
  plt.plot(xx2, yy4, label=r'$ \lambda$ = 0.4', color="red")
@@ -248,7 +250,8 @@ def run_simulation():
  plt.clf()
  plt.xlabel(r'$P^{*}$')
  plt.ylabel('$SR(P^{*})$')
- plt.yticks(yy6)
+ plt.grid(axis='y', color='0.95')
+ plt.yticks(np.arange(0.1, max(yy6)+0.1, 0.1))
 # plt.plot(xx, yy)
  plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.4', color="red")
  plt.plot(xx2, yy2, label=r'$ \lambda$ = 0.05', color="green")

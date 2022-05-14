@@ -1,6 +1,6 @@
 {
    "gbm_mu": 0.002,
-   "gbm_sigma": 0.05,
+   "gbm_sigma": 0.1,
    "taua": 3,
    "taub": 4,
    "alphaa": 0.3,
