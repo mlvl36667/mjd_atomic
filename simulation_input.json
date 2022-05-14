@@ -1,6 +1,6 @@
 {
    "gbm_mu": 0.002,
-   "gbm_sigma": 0.002,
+   "gbm_sigma": 0.1,
    "taua": 3,
    "taub": 4,
    "alphaa": 0.3,
@@ -11,7 +11,7 @@
    "rb": 0.3,
    "pt0": 2,
    "mjd_mu": 0.01,
-   "mjd_sigma": 0.02,
+   "mjd_sigma": 0.01,
    "mjd_lambda": 1,
    "kmax": 10
 }
