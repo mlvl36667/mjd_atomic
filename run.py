@@ -6,8 +6,17 @@ import sys
 import json
 import datetime
 import math
+import matplotlib
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
+
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+})
 
 
 def log_string(file_descriptor,string):
@@ -207,42 +216,45 @@ def run_simulation():
  yy6 = []
  for i in range(1,40):
   yy1.append(ut2bcontMJD(2.4, i/10, kmax, 0.05, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
-  yy4.append(ut2bcontMJD(2.4, i/10, kmax, 0.2, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy4.append(ut2bcontMJD(2.4, i/10, kmax, 0.4, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
   yy6.append(ut2bcontMJD(2.4, i/10, kmax, 0.00001, taub, 0.00001, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, 0.00001, alphaa))
   yy5.append(i/10)
   xx2.append(i/10)
 
- plt.title("Ut2bcont in MJD")
+ plt.title("Ut2bcont in MJD and BS")
  plt.xlabel('P(t2)')
  plt.ylabel('Utility')
  plt.yticks(yy2)
 # plt.plot(xx, yy)
  plt.plot(xx2, yy5)
- plt.plot(xx2, yy4, label="λ = 0.2")
- plt.plot(xx2, yy1, label="λ = 0.05")
+ plt.plot(xx2, yy4, label="lambda = 0.4")
+ plt.plot(xx2, yy1, label="lambda = 0.05")
  plt.plot(xx2, yy6, label="Black-Scholes")
  plt.legend()
    
  plt.show()
+ plt.savefig('ut2bcont.pgf')
  
  xx2 = []
  yy1 = []
  yy6 = []
  for i in range(15,30):
-  yy1.append(success_rate_MJD(i/10, pt0, kmax, 0.2, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
+  yy1.append(success_rate_MJD(i/10, pt0, kmax, 0.4, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
   yy6.append(success_rate_MJD(i/10, pt0, kmax, 0.000001, taua, 0.00001, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  0.00001, alphaa))
   xx2.append(i/10)
 
- plt.title("Ut2bcont in MJD")
- plt.xlabel('P(t2)')
- plt.ylabel('Utility')
+ plt.title("Success rate in MJD and BS")
+ plt.xlabel('P*')
+ plt.ylabel('SR(P*)')
  plt.yticks(yy2)
 # plt.plot(xx, yy)
- plt.plot(xx2, yy1, label="λ = 0.2")
+ plt.plot(xx2, yy1, label="lambda = 0.4")
  plt.plot(xx2, yy6, label="Black-Scholes")
  plt.legend()
    
  plt.show()
+
+ plt.savefig('sr.pgf')
 
 
  log_string(simulation_output, "------------------------")
