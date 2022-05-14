@@ -232,6 +232,7 @@ def run_simulation():
  plt.legend(title=r'Integrand of SR($P_{*}$)')
    
  plt.savefig("integrand.pdf", bbox_inches='tight')
+ plt.savefig('integrand.pgf')
 # sys.exit(0)
 
 #######################
@@ -266,6 +267,7 @@ def run_simulation():
  plt.legend(title=r'$U^{cont}_{B}(t_2)$')
    
  plt.savefig('ut2bcont.pgf')
+ plt.savefig("ut2bcont.pdf", bbox_inches='tight')
  
 #######################
 # print SR
@@ -296,6 +298,7 @@ def run_simulation():
    
 
  plt.savefig('sr.pgf')
+ plt.savefig("sr.pdf", bbox_inches='tight')
 
 
  log_string(simulation_output, "------------------------")
