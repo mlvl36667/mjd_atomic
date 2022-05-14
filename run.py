@@ -243,6 +243,7 @@ def run_simulation():
   yy6.append(success_rate_MJD(i/10, pt0, kmax, 0.000001, taua, 0.00001, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  0.00001, alphaa))
   xx2.append(i/10)
 
+ plt.clf()
  plt.title("Success rate in MJD and BS")
  plt.xlabel('P*')
  plt.ylabel('SR(P*)')
