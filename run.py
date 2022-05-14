@@ -7,10 +7,28 @@ import json
 import datetime
 import math
 import matplotlib.pyplot as plt
+from scipy.integrate import quad
 
 
 def log_string(file_descriptor,string):
  file_descriptor.write(string+"\n")
+
+def mjd_expectation(tau, pt, lmb,  mjd_mu, mjd_sigma):
+ return pt*math.exp(mu*tau)*math.exp( lmb * tau* (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
+
+def ut2bcontMJD_integrand(x,taub, rb, pt2, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu):
+ ut3bstop = mjd_expectation(2*taub,x)/math.exp(rb*2*taub)
+ return pdf_mjd(x, pt2, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu)*ut3bstop
+
+def ut2bcontMJD(pstar, pt, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab):
+
+ ut3bcont = pstar*(1+alphab)/(math.exp(rb*(epsilonb+ra) ))
+
+ first_term = 1 - cdf_mjd(pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu), pt2, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu ) * ut3bcont
+
+ second_term = quad(ut2bcontMJD_integrand, 0, pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu), args=(taub, rb, pt2, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu))[0]
+
+ return (first_term + second_term) /  math.exp(rb*taub)
 
 def pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu):
  first_term = pstar / math.exp(ra*(epsilonb + 2*taua))
@@ -40,6 +58,28 @@ def pdf_mjd(x, pt, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu):
 
   pdfvalue = pdfvalue + increment
  return pdfvalue
+
+# This function calculates the MJD CDF
+def cdf_mjd(x, pt, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu):
+ cdfvalue = 0
+ for k in range(0,kmax+1):
+  first_term = (lmb*tau)**k / math.factorial(k)
+  second_term = math.exp(-lmb * tau )
+
+  normal_term = math.erfc((-1/math.sqrt(2))*( math.log(x/pt) - k*mjd_sigma - tau*(gbm_mu - (gbm_sigma**2)/2) ) / (math.sqrt(k)*mjd_sigma + math.sqrt(tau) * gbm_sigma) )
+  increment = first_term * second_term * normal_term/2
+
+#  print("---------------------")
+#  print(str(x))
+#  print(str(first_term))
+#  print(str(second_term))
+#  print(str(third_term))
+#  print(str(normal_term))
+#  print(str(increment))
+#  print("---------------------")
+
+  cdfvalue = cdfvalue + increment
+ return cdfvalue
 
 def run_simulation():
  simulation_input = open('simulation_input.json')
@@ -106,11 +146,33 @@ def run_simulation():
   yy.append(pdf_mjd(i/10, pt0, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu))
   xx.append(i/10)
   
- plt.title("PDF in MJD")
+ xx2 = []
+ yy2 = []
+ for i in range(10,50):
+  yy2.append(cdf_mjd(i/10, pt0, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu))
+  xx2.append(i/10)
+  
+ plt.title("PDF and CDF in MJD")
  plt.xlabel('x')
- plt.ylabel('probability density')
- plt.yticks(yy)
+ plt.ylabel('density')
+ plt.yticks(yy2)
+# plt.plot(xx, yy)
+# plt.plot(xx2, yy2)
+#   
+# plt.show()
+
+ xx2 = []
+ yy2 = []
+ for i in range(1,50):
+  yy2.append(ut2bcontMJD(2, i, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab))
+  xx2.append(i/10)
+  
+ plt.title("Ut2bcont in MJD")
+ plt.xlabel('x')
+ plt.ylabel('Ut2bcont')
+ plt.yticks(yy2)
  plt.plot(xx, yy)
+ plt.plot(xx2, yy2)
    
  plt.show()
 
