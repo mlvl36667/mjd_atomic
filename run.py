@@ -211,11 +211,13 @@ def run_simulation():
  yy3 = []
  yy4 = []
  yy5 = []
+ yy6 = []
  for i in range(10,350):
   yy1.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.05, taua, mjd_sigma, gbm_sigma, gbm_mu))
   yy2.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.1, taua, mjd_sigma, gbm_sigma, gbm_mu))
   yy3.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.3, taua, mjd_sigma, gbm_sigma, gbm_mu))
   yy4.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,0     , alphaa, taub, pt0, kmax, 0, taua, 0, gbm_sigma, gbm_mu))
+  yy6.append(success_rate_MJD_integrand(i/100,2.4, ra, epsilonb,0     , alphaa, taub, pt0, kmax, 0, taua, 0, 0.125, gbm_mu))
   yy5.append(pdf_bs(i/100, 2.4, taub, gbm_sigma, gbm_mu))
   xx2.append(i/100)
 
@@ -228,6 +230,7 @@ def run_simulation():
  plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.05', color="green")
  plt.plot(xx2, yy2, label=r'$ \lambda$ = 0.1', color="red")
  plt.plot(xx2, yy3, label=r'$ \lambda$ = 0.3', color="purple")
+ plt.plot(xx2, yy6, label=r'$ \sigma$ = 0.125', color="orange")
 # plt.plot(xx2, yy5, label=r'Real BS', color="yellow")
  plt.legend(title=r'Integrand of SR($P_{*}$)')
    
