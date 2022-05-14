@@ -258,10 +258,10 @@ def run_simulation():
  plt.grid(axis='y', color='0.95')
  plt.yticks(np.arange(0.1, max(yy6)+0.1, 0.1))
 # plt.plot(xx, yy)
+ plt.plot(xx2, yy6, label="Black-Scholes", color="black")
  plt.plot(xx2, yy2, label=r'$ \lambda$ = 0.05', color="green")
  plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.1', color="red")
  plt.plot(xx2, yy7, label=r'$ \lambda$ = 0.3', color="purple")
- plt.plot(xx2, yy6, label="Black-Scholes", color="black")
  plt.legend()
    
  plt.show()
