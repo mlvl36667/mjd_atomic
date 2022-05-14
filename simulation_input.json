@@ -7,11 +7,11 @@
    "alphab": 0.3,
    "epsilona": 1,
    "epsilonb": 1,
-   "ra": 0.3,
-   "rb": 0.3,
+   "ra": 0.01,
+   "rb": 0.01,
    "pt0": 2,
-   "mjd_mu": 0.01,
+   "mjd_mu": 0.001,
    "mjd_sigma": 0.01,
-   "mjd_lambda": 1,
+   "mjd_lambda": 0.1,
    "kmax": 50
 }

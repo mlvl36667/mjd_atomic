@@ -28,12 +28,13 @@ def ut2bcontMJD(pstar, pt2, kmax, lmb, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, ep
 
  second_term = quad(ut2bcontMJD_integrand, 0, pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu), args=(taub, rb, pt2, kmax, lmb, mjd_sigma, gbm_sigma, gbm_mu, mjd_mu))[0]
 # print("------------------")
-# print(str(pt2))
+# print(str(pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu)))
 # print(str(first_term))
 # print(str(second_term))
 # print("------------------")
 
  return (first_term + second_term) /  math.exp(rb*taub)
+# return (first_term  ) /  math.exp(rb*taub)
 
 def pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu):
  first_term = pstar / math.exp(ra*(epsilonb + 2*taua))
@@ -151,38 +152,45 @@ def run_simulation():
   yy.append(pdf_mjd(i/10, pt0, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu))
   xx.append(i/10)
   
- xx = []
- yy = []
- for i in range(10,200):
-  yy.append(ut2bcontMJD(pstar, i/100, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
-  xx.append(i/100)
+ xx3 = []
+ yy3 = []
+ for i in range(10,50):
+  yy3.append(cdf_mjd(i/10, pt0, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu))
+  xx3.append(i/10)
   
  plt.title("PDF and CDF in MJD")
  plt.xlabel('x')
  plt.ylabel('density')
  plt.yticks(yy)
 
- plt.plot(xx, yy)
-# plt.plot(xx2, yy2)
+# plt.plot(xx, yy)
+# plt.plot(xx3, yy3)
 #   
 # plt.show()
 
  integral = quad(ut2bcontMJD_integrand, 0, pt3eq_mjd(2, mjd_lambda, ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu), args=(taub, rb, 2, kmax,  mjd_lambda, mjd_sigma, gbm_sigma, gbm_mu, mjd_mu))[0]
 # print(str(integral))
-
  xx2 = []
+ yy1 = []
  yy2 = []
- for i in range(1,20):
-  yy2.append(ut2bcontMJD_integrand(i,taub, rb, 2, kmax, mjd_lambda, mjd_sigma, gbm_sigma, gbm_mu, mjd_mu))
+ yy4 = []
+ yy5 = []
+ for i in range(1,40):
+  yy1.append(ut2bcontMJD(1.2, i/10, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy2.append(ut2bcontMJD(1.6, i/10, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy4.append(ut2bcontMJD(2, i/10, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
+  yy5.append(ut2bcontMJD(2.4, i/10, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu,rb, epsilonb, ra, alphab, taua, mjd_mu, alphaa))
   xx2.append(i/10)
-  
 
  plt.title("Ut2bcont in MJD")
  plt.xlabel('x')
  plt.ylabel('Ut2bcont')
  plt.yticks(yy2)
 # plt.plot(xx, yy)
-# plt.plot(xx2, yy2)
+ plt.plot(xx2, yy1, label="P* = 1.2")
+ plt.plot(xx2, yy2, label="P* = 1.6")
+ plt.plot(xx2, yy4, label="P* = 2.0")
+ plt.plot(xx2, yy5, label="P* = 2.4")
    
  plt.show()
  
