@@ -81,27 +81,32 @@ def pt3eq_mjd(pstar, lmb,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, mu
  third_term = 1/( math.exp(mu*taub) * math.exp(lmb*taub*(math.exp(mjd_mu + mjd_sigma**2/2)-1))  )
  return first_term * second_term * third_term
 
+# This function calculates the BS density
+def pdf_bs(x, pt, tau, gbm_sigma, gbm_mu):
+ pdfvalue = 1/( math.sqrt(2*math.pi)*( math.sqrt(tau) * gbm_sigma ) )
+ pdfvalue = pdfvalue * math.exp((-1/2)*( ( math.log(x/pt) - tau*(gbm_mu - (gbm_sigma**2)/2) ) / (math.sqrt(tau) * gbm_sigma) )**2)
+ return pdfvalue/x
 # This function calculates the MJD density
 def pdf_mjd(x, pt, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu):
  pdfvalue = 0
  for k in range(0,kmax+1):
   first_term = (lmb*tau)**k / math.factorial(k)
-  second_term = math.exp(-lmb * tau )
   third_term = 1/( math.sqrt(2*math.pi)*( math.sqrt(k)*mjd_sigma + math.sqrt(tau) * gbm_sigma ) )
-
   normal_term = math.exp((-1/2)*( ( math.log(x/pt) - k*mjd_sigma - tau*(gbm_mu - (gbm_sigma**2)/2) ) / (math.sqrt(k)*mjd_sigma + math.sqrt(tau) * gbm_sigma) )**2)
-  increment = first_term * second_term * third_term * normal_term/x
+
+  increment = first_term *  third_term * normal_term/x
 
 #  print("---------------------")
 #  print(str(x))
 #  print(str(first_term))
-#  print(str(second_term))
 #  print(str(third_term))
 #  print(str(normal_term))
 #  print(str(increment))
 #  print("---------------------")
 
   pdfvalue = pdfvalue + increment
+ pdfvalue = pdfvalue*math.exp(-lmb * tau )
+# print("pdfvalue: "+str(pdfvalue))
  return pdfvalue
 
 # This function calculates the MJD CDF
@@ -197,18 +202,41 @@ def run_simulation():
   yy3.append(cdf_mjd(i/10, pt0, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu))
   xx3.append(i/10)
   
- plt.title("PDF and CDF in MJD")
- plt.xlabel('x')
- plt.ylabel('density')
- plt.yticks(yy)
+#######################
+# print the integrand
+#######################
+ xx2 = []
+ yy1 = []
+ yy2 = []
+ yy3 = []
+ yy4 = []
+ yy5 = []
+ for i in range(1,35):
+  yy1.append(success_rate_MJD_integrand(i/10,2, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.05, taua, mjd_sigma, gbm_sigma, gbm_mu))
+  yy2.append(success_rate_MJD_integrand(i/10,2, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.1, taua, mjd_sigma, gbm_sigma, gbm_mu))
+  yy3.append(success_rate_MJD_integrand(i/10,2, ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, 0.3, taua, mjd_sigma, gbm_sigma, gbm_mu))
+  yy4.append(success_rate_MJD_integrand(i/10,2, ra, epsilonb,0     , alphaa, taub, pt0, kmax, 0, taua, 0, gbm_sigma, gbm_mu))
+  yy5.append(pdf_bs(i/10, 2, taub, gbm_sigma, gbm_mu))
+  xx2.append(i/10)
 
-# plt.plot(xx, yy)
-# plt.plot(xx3, yy3)
-#   
-# plt.show()
+ plt.clf()
+ plt.xlabel(r'$P(t_2)$ ')
+ plt.ylabel(r'Utility')
+ plt.yticks(np.arange(0.5, max(yy4)+1, 0.5))
+ plt.grid(axis='y', color='0.95')
+ plt.plot(xx2, yy4, label="Black-Scholes", color="black")
+ plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.05', color="green")
+ plt.plot(xx2, yy2, label=r'$ \lambda$ = 0.1', color="red")
+ plt.plot(xx2, yy3, label=r'$ \lambda$ = 0.3', color="purple")
+# plt.plot(xx2, yy5, label=r'Real BS', color="yellow")
+ plt.legend(title=r'Integrand of SR($P_{*}$)')
+   
+ plt.savefig("integrand.pdf", bbox_inches='tight')
+# sys.exit(0)
 
- integral = quad(ut2bcontMJD_integrand, 0, pt3eq_mjd(2, mjd_lambda, ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu), args=(taub, rb, 2, kmax,  mjd_lambda, mjd_sigma, gbm_sigma, gbm_mu, mjd_mu))[0]
-# print(str(integral))
+#######################
+# print ut2bcont
+#######################
  xx2 = []
  yy1 = []
  yy2 = []
@@ -237,9 +265,11 @@ def run_simulation():
  plt.plot(xx2, yy6, label="Black-Scholes", color="black")
  plt.legend(title=r'$U^{cont}_{B}(t_2)$')
    
- plt.show()
  plt.savefig('ut2bcont.pgf')
  
+#######################
+# print SR
+#######################
  xx2 = []
  yy1 = []
  yy2 = []
@@ -264,7 +294,6 @@ def run_simulation():
  plt.plot(xx2, yy7, label=r'$ \lambda$ = 0.3', color="purple")
  plt.legend()
    
- plt.show()
 
  plt.savefig('sr.pgf')
 
