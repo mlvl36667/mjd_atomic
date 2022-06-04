@@ -319,23 +319,18 @@ def get_coin_price(t,rates):
  print("Price not found for "+str(t)+", now exciting...")
  sys.exit()
 
-def swap_coins(rates,t_0):
- swap_output = open("swap_output", "a")
- log_string(swap_output, "------------------------")
- log_string(swap_output, "Launching the atomic swap simulator at "+str(datetime.datetime.now()))
- log_string(swap_output, "------------------------")
+def swap_coins(rates,t_0,swap_output):
 
  swap_success = True
 
- t_0 = 1650198502487
  pt_0 = get_coin_price(t_0,rates)
 
  short_time = 1000 # in ms if t_0 is a UNIX timestamp
  exchange_rate = 1.463
  taua = 3*60*60*1000 # in ms
  taub = 4*60*60*1000 # in ms
- alphaa = 0.3
- alphab = 0.3
+ alphaa = 0.1
+ alphab = 0.1
  ra = 0.01
  rb = 0.01
  epsilonb = 1
@@ -343,6 +338,7 @@ def swap_coins(rates,t_0):
  taua_h = taua / (60*60*1000)
  taub_h = taub / (60*60*1000)
 
+ pt_0 = get_coin_price(t_0,rates)
  t_1 = t_0 + short_time
  pt_1 = get_coin_price(t_1,rates)
  t_2 = t_1 + taua
@@ -356,6 +352,14 @@ def swap_coins(rates,t_0):
  t_6 = t_4 + taua 
  pt_6 = get_coin_price(t_6,rates)
 
+ log_string(swap_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
+ log_string(swap_output, "pt1: "+str(pt_1))
+ log_string(swap_output, "pt2: "+str(pt_2))
+ log_string(swap_output, "pt3: "+str(pt_3))
+ log_string(swap_output, "pt4: "+str(pt_4))
+ log_string(swap_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
+ log_string(swap_output, "pt6: "+str(pt_6))
+
 ## t2
  ut3acont = (1+alphaa)* pt_5 / math.exp(ra*taub_h)
  ut3astop = exchange_rate / math.exp(ra*(epsilonb+2*taua_h))
@@ -366,7 +370,6 @@ def swap_coins(rates,t_0):
  if(ut3acont < ut3astop):
   log_string(swap_output, "The swap fails at t3 due to A")
   swap_success = False
-  reason = "The swap fails at t3 due to A"
 # else:
 #  log_string(swap_output, "A would cont. at t3")
  
@@ -390,7 +393,6 @@ def swap_coins(rates,t_0):
  if(ut2bcont < ut2bstop):
   log_string(swap_output, "The swap fails at t2 due to B")
   swap_success = False
-  reason = "The swap fails at t2 due to B"
 # else:
 #  log_string(swap_output, "B would cont. at t2")
 ## t1
@@ -406,17 +408,13 @@ def swap_coins(rates,t_0):
  if(ut1acont < ut1astop):
   log_string(swap_output, "The swap fails at t1 due to A")
   swap_success = False
-  reason = "The swap fails at t1 due to A"
 # else:
 #  log_string(swap_output, "A would cont. at t1")
 
- if(not swap_success):
-  log_string(swap_output, reason)
- else:
+ if(swap_success):
   log_string(swap_output, "The swap succeeds")
  
 
- swap_output.close()
 
 rates = []
 with open('/home/c/pols_prices') as f:
@@ -424,7 +422,16 @@ with open('/home/c/pols_prices') as f:
   x, y = line.split(",")
   rates.append([int(x),float(y)])
 
-swap_coins(rates)
+swap_output = open("swap_output", "a")
+log_string(swap_output, "------------------------")
+log_string(swap_output, "Launching the atomic swap simulator at "+str(datetime.datetime.now()))
+log_string(swap_output, "------------------------")
+
+for rate in rates:
+ swap_coins(rates,rate[0],swap_output)
+
+swap_output.close()
+
 sys.exit(0)
 
 run_simulation()
