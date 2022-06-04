@@ -310,4 +310,121 @@ def run_simulation():
  
  simulation_output.close()
 
+def get_coin_price(t,rates):
+ for rate in rates:
+  if(rate[0] == t):
+   return rate[1]
+  if(rate[0] > t):
+   return rate[1]
+ print("Price not found for "+str(t)+", now exciting...")
+ sys.exit()
+
+def swap_coins(rates,t_0):
+ swap_output = open("swap_output", "a")
+ log_string(swap_output, "------------------------")
+ log_string(swap_output, "Launching the atomic swap simulator at "+str(datetime.datetime.now()))
+ log_string(swap_output, "------------------------")
+
+ swap_success = True
+
+ t_0 = 1650198502487
+ pt_0 = get_coin_price(t_0,rates)
+
+ short_time = 1000 # in ms if t_0 is a UNIX timestamp
+ exchange_rate = 1.463
+ taua = 3*60*60*1000 # in ms
+ taub = 4*60*60*1000 # in ms
+ alphaa = 0.3
+ alphab = 0.3
+ ra = 0.01
+ rb = 0.01
+ epsilonb = 1
+
+ taua_h = taua / (60*60*1000)
+ taub_h = taub / (60*60*1000)
+
+ t_1 = t_0 + short_time
+ pt_1 = get_coin_price(t_1,rates)
+ t_2 = t_1 + taua
+ pt_2 = get_coin_price(t_2,rates)
+ t_3 = t_2 + taub
+ pt_3 = get_coin_price(t_3,rates)
+ t_4 = t_3 + epsilonb
+ pt_4 = get_coin_price(t_4,rates)
+ t_5 = t_3 + taub 
+ pt_5 = get_coin_price(t_5,rates)
+ t_6 = t_4 + taua 
+ pt_6 = get_coin_price(t_6,rates)
+
+## t2
+ ut3acont = (1+alphaa)* pt_5 / math.exp(ra*taub_h)
+ ut3astop = exchange_rate / math.exp(ra*(epsilonb+2*taua_h))
+
+ ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
+ ut3bstop = get_coin_price(t_3 + taub + taub,rates) / math.exp(ra*(epsilonb+2*taua_h))
+
+ if(ut3acont < ut3astop):
+  log_string(swap_output, "The swap fails at t3 due to A")
+  swap_success = False
+  reason = "The swap fails at t3 due to A"
+# else:
+#  log_string(swap_output, "A would cont. at t3")
+ 
+ if(ut3acont > ut3astop): # ez így biztos hogy jó?
+  utility = ut3acont
+ else:
+  utility = ut3astop
+
+## t2
+ ut2acont =  utility / math.exp(ra*taub_h)
+ ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
+
+ if(ut3bcont > ut3bstop): # ez így biztos hogy jó?
+  utility = ut3bcont
+ else:
+  utility = ut3bstop
+
+ ut2bcont = utility / math.exp(rb*taub_h)
+ ut2bstop = pt_2
+
+ if(ut2bcont < ut2bstop):
+  log_string(swap_output, "The swap fails at t2 due to B")
+  swap_success = False
+  reason = "The swap fails at t2 due to B"
+# else:
+#  log_string(swap_output, "B would cont. at t2")
+## t1
+
+ if(ut2acont > ut2astop): # ez így biztos hogy jó?
+  utility = ut2acont
+ else:
+  utility = ut2astop
+
+ ut1acont = utility / math.exp(ra*taua_h)
+ ut1astop = exchange_rate
+
+ if(ut1acont < ut1astop):
+  log_string(swap_output, "The swap fails at t1 due to A")
+  swap_success = False
+  reason = "The swap fails at t1 due to A"
+# else:
+#  log_string(swap_output, "A would cont. at t1")
+
+ if(not swap_success):
+  log_string(swap_output, reason)
+ else:
+  log_string(swap_output, "The swap succeeds")
+ 
+
+ swap_output.close()
+
+rates = []
+with open('/home/c/pols_prices') as f:
+ for line in f:
+  x, y = line.split(",")
+  rates.append([int(x),float(y)])
+
+swap_coins(rates)
+sys.exit(0)
+
 run_simulation()
