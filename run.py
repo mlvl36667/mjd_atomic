@@ -132,26 +132,7 @@ def cdf_mjd(x, pt, kmax, lmb, tau, mjd_sigma, gbm_sigma, gbm_mu):
  return cdfvalue
 
 def run_simulation():
- simulation_input = open('simulation_input.json')
- input_variables = json.load(simulation_input)
 
- gbm_mu = input_variables['gbm_mu']
- gbm_sigma = input_variables['gbm_sigma']
- taua = input_variables['taua']
- taub = input_variables['taub']
- alphaa = input_variables['alphaa']
- alphab = input_variables['alphab']
- ra = input_variables['ra']
- rb = input_variables['rb']
- pt0 = input_variables['pt0']
- epsilona = input_variables['epsilona']
- epsilonb = input_variables['epsilonb']
-
- mjd_mu = input_variables['mjd_mu']
- mjd_sigma = input_variables['mjd_sigma']
- mjd_lambda = input_variables['mjd_lambda']
-
- kmax = input_variables['kmax']
 
 
  simulation_output = open("simulation_output", "a")
@@ -303,6 +284,7 @@ def run_simulation():
  plt.savefig('sr.pgf')
  plt.savefig("sr.pdf", bbox_inches='tight')
 
+#######################################################################
 
  log_string(simulation_output, "------------------------")
  log_string(simulation_output, "Finalizing simulation output at "+str(datetime.datetime.now()))
@@ -316,21 +298,19 @@ def get_coin_price(t,rates):
    return rate[1]
   if(rate[0] > t):
    return rate[1]
- print("Price not found for "+str(t)+", now exciting...")
- sys.exit()
+ print("Price not found for "+str(t)+", returning zero...")
+ return 0
 
-def swap_coins(rates,t_0,swap_output):
+def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta):
 
  swap_success = True
 
- pt_0 = get_coin_price(t_0,rates)
 
  short_time = 1000 # in ms if t_0 is a UNIX timestamp
- exchange_rate = 1.463
  taua = 3*60*60*1000 # in ms
  taub = 4*60*60*1000 # in ms
- alphaa = 0.1
- alphab = 0.1
+ alphaa = 0.2
+ alphab = 0.2
  ra = 0.01
  rb = 0.01
  epsilonb = 1
@@ -353,6 +333,7 @@ def swap_coins(rates,t_0,swap_output):
  pt_6 = get_coin_price(t_6,rates)
 
  log_string(swap_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
+
  log_string(swap_output, "pt1: "+str(pt_1))
  log_string(swap_output, "pt2: "+str(pt_2))
  log_string(swap_output, "pt3: "+str(pt_3))
@@ -412,12 +393,19 @@ def swap_coins(rates,t_0,swap_output):
 #  log_string(swap_output, "A would cont. at t1")
 
  if(swap_success):
-  log_string(swap_output, "The swap succeeds")
- 
+  log_string(swap_output, "The swap succeeds for price_delta: "+str(price_delta))
+  return 1
+ else:
+  log_string(swap_output, "The swap fails for price_delta: "+str(price_delta))
+  return 0
+#--------------------------------------------------------------------------------
 
+############################################
+####### Entry point to the script ##########
+############################################
 
 rates = []
-with open('/home/c/pols_prices') as f:
+with open('/home/c/bifi_prices') as f:
  for line in f:
   x, y = line.split(",")
   rates.append([int(x),float(y)])
@@ -427,11 +415,149 @@ log_string(swap_output, "------------------------")
 log_string(swap_output, "Launching the atomic swap simulator at "+str(datetime.datetime.now()))
 log_string(swap_output, "------------------------")
 
+log_string(swap_output, "Now calculating jumps")
+
+rates1 = []
 for rate in rates:
- swap_coins(rates,rate[0],swap_output)
+ rates1.append(rate[1])
+ 
+diff = np.diff(rates1) / rates1[:-1]
+
+diff_list = diff.tolist()
+
+log_string(swap_output, "Maximum of jumps: "+str(np.max(diff)))
+log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
+length_of_sim = (rates[-1][0]-rates[0][0]) / (1000*60*60)
+
+jump_criteria = 0.01
+
+significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
+bs_terms = [x for x in diff_list if abs(x) < jump_criteria]
+
+intensity = len(significant_jumps) / length_of_sim
+log_string(swap_output, "Intensity: "+str(intensity))
+log_string(swap_output, "Lenth of sim: "+str(length_of_sim))
+
+log_string(swap_output, "Significant jumps: "+str(significant_jumps)+" len: "+str(len(significant_jumps)))
+sigma_hat = np.std(bs_terms)/math.sqrt(length_of_sim)
+log_string(swap_output, "sigma_hat: "+str(sigma_hat))
+
+mu_hat = (2*np.mean(bs_terms) + sigma_hat*sigma_hat*length_of_sim) / (2 * length_of_sim)
+
+sigma_jhat = math.sqrt(np.var(significant_jumps) - sigma_hat*sigma_hat * length_of_sim)
+
+mu_jhat = np.mean(significant_jumps) - ( mu_hat - sigma_hat*sigma_hat / 2) * length_of_sim
+
+log_string(swap_output, "mu_hat: "+str(mu_hat))
+log_string(swap_output, "sigma_jhat: "+str(sigma_jhat))
+log_string(swap_output, "mu_jhat: "+str(mu_jhat))
+
+#######################################################
+### Use estimated data from historical ticker data ####
+#######################################################
+
+gbm_mu = mu_hat
+gbm_sigma = sigma_hat
+taua = 3
+taub = 4
+alphaa = 0.2
+alphab = 0.2
+ra = 0.01
+rb = 0.01
+pt0 = 2
+epsilona = 1
+epsilonb = 1
+
+mjd_mu = mu_jhat
+mjd_sigma = sigma_jhat
+mjd_lambda = intensity
+
+kmax = 20
+
+##############################################
+# print SR for real world data from Binance ##
+##############################################
+xx2 = []
+yy1 = []
+yy2 = []
+yy6 = []
+yy7 = []
+for i in range(15,30):
+ yy1.append(success_rate_MJD(i/10, pt0, kmax, intensity, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
+ yy6.append(success_rate_MJD(i/10, pt0, kmax, 0.000001, taua, 0.00001, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  0.00001, alphaa))
+ xx2.append(i/10)
+
+
+#######################################################################
+
+
+price_deltas = [-0.3, -0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11,  -0.1, -0.05, 0, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 0.2, 0.3, 0.4, 0.5]
+price_deltas_2 = price_deltas * pt0
+price_deltas_3 = price_deltas + price_deltas_2
+simulated_success_rate = []
+
+for price_delta in price_deltas:
+ number_of_successes = 0
+ number_of_trials = 0
+ number_of_datapoints = 0 
+ max_number_of_datapoints = 3000
+ for rate in rates:
+  if(number_of_datapoints < max_number_of_datapoints):
+   success_or_failure = swap_coins(rates,rate[0],swap_output, rate[1] + price_delta*rate[1], price_delta)
+   number_of_trials += 1
+   number_of_datapoints += 1
+   number_of_successes = number_of_successes + success_or_failure
+
+ log_string(swap_output, "Delta: "+str(price_delta)+", percentage:  "+str(number_of_successes/number_of_trials))
+
+ simulated_success_rate.append(number_of_successes/number_of_trials)
+
+plt.clf()
+plt.xlabel(r'$P^{*}$')
+plt.ylabel('$SR(P^{*})$')
+plt.grid(axis='y', color='0.95')
+plt.yticks(np.arange(0.1, max(yy1)+0.1, 0.1))
+# plt.plot(xx, yy)
+#plt.plot(xx2, yy6, label="Black-Scholes", color="black")
+plt.legend(title=r'Bifi-USDT Ticker (Binance) - SR($P_{*}$)')
+plt.plot(xx2, yy1, label=r'$ estimated \lambda$ ', color="green")
+plt.plot(price_deltas_3, simulated_success_rate, label=r'$ simulated \lambda$ ', color="blue")
+plt.legend()
+  
+
+plt.savefig('real_world_sr.pgf')
+plt.savefig("real_world_sr.pdf", bbox_inches='tight')
 
 swap_output.close()
 
 sys.exit(0)
 
-run_simulation()
+
+############################################################
+##### Simulate formulas from A Game-Theoretic Analysis of ##
+##### Cross-Chain Atomic Swaps with HTLCs               ####
+
+simulation_input = open('simulation_input.json')
+input_variables = json.load(simulation_input)
+simulation_input.close()
+
+gbm_mu = input_variables['gbm_mu']
+gbm_sigma = input_variables['gbm_sigma']
+taua = input_variables['taua']
+taub = input_variables['taub']
+alphaa = input_variables['alphaa']
+alphab = input_variables['alphab']
+ra = input_variables['ra']
+rb = input_variables['rb']
+pt0 = input_variables['pt0']
+epsilona = input_variables['epsilona']
+epsilonb = input_variables['epsilonb']
+
+mjd_mu = input_variables['mjd_mu']
+mjd_sigma = input_variables['mjd_sigma']
+mjd_lambda = input_variables['mjd_lambda']
+
+kmax = input_variables['kmax']
+
+run_simulation(gbm_mu, gbm_sigma, taua, taub, alphaa, alphab, ra, rb, pt0, epsilona, epsilonb, mjd_mu, mjd_sigma, mjd_lambda, kmax)
+#############################################################
