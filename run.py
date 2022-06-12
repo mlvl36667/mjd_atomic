@@ -504,7 +504,7 @@ for price_delta in price_deltas:
  number_of_successes = 0
  number_of_trials = 0
  number_of_datapoints = 0 
- max_number_of_datapoints = 8000
+ max_number_of_datapoints = 500
  
  for rate in rates:
   if(number_of_datapoints < max_number_of_datapoints):
@@ -527,8 +527,8 @@ plt.yticks(np.arange(0.1, max(yy1)+0.1, 0.1))
 # plt.plot(xx, yy)
 #plt.plot(xx2, yy6, label="Black-Scholes", color="black")
 plt.legend(title=r'Bifi-USDT Ticker (Binance) - SR($P_{*}$)')
-plt.plot(xx2, yy1, label=r'estimated $\lambda$ ', color="green")
-plt.plot(price_deltas_3, simulated_success_rate, label=r'simulated $\lambda$ ', color="blue")
+plt.plot(xx2, yy1, label=r'SR_{est} ', color="green")
+plt.plot(price_deltas_3, simulated_success_rate, label=r'SR_{sim}$ ', color="blue")
 plt.legend()
   
 
