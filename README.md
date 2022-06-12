@@ -2,7 +2,7 @@
 Install the dependencies:
 ```
 sudo apt-get install texlive-latex-base texlive-latex-extra -y
-pip3 install scipy
+pip3 install scipy matplotlib 
 ```
 
 Use the code in the following way:
