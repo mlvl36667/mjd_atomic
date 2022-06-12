@@ -2,4 +2,5 @@ simulation_output
 .simulation_input.json.swp
 .run.py.swp
 real_world_sr.pdf
+real_world_sr.pgf
 swap_output
