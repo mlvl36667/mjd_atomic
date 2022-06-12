@@ -504,7 +504,7 @@ for price_delta in price_deltas:
  number_of_successes = 0
  number_of_trials = 0
  number_of_datapoints = 0 
- max_number_of_datapoints = 10000
+ max_number_of_datapoints = 20000
  
  for rate in rates:
   if(number_of_datapoints < max_number_of_datapoints):
