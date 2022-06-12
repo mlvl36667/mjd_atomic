@@ -6,6 +6,7 @@ import sys
 import numpy as np
 import json
 import datetime
+import time
 import math
 import matplotlib
 import matplotlib.pyplot as plt
@@ -491,16 +492,20 @@ for i in range(15,30):
 #######################################################################
 
 
-price_deltas = [-0.3, -0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11,  -0.1, -0.05, 0, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 0.2, 0.3, 0.4, 0.5]
-price_deltas_2 = price_deltas * pt0
-price_deltas_3 = price_deltas + price_deltas_2
+price_deltas = [ -0.14, -0.13, -0.12, -0.11,  -0.1, -0.05, 0, 0.01, 0.011, 0.012]
+npprices = np.array(price_deltas) * pt0 + np.array(price_deltas) + pt0
+price_deltas_3 = npprices.tolist()
 simulated_success_rate = []
 
+iter_length = 0
 for price_delta in price_deltas:
+ start_time = time.time()
+
  number_of_successes = 0
  number_of_trials = 0
  number_of_datapoints = 0 
- max_number_of_datapoints = 3000
+ max_number_of_datapoints = 8000
+ 
  for rate in rates:
   if(number_of_datapoints < max_number_of_datapoints):
    success_or_failure = swap_coins(rates,rate[0],swap_output, rate[1] + price_delta*rate[1], price_delta)
@@ -509,8 +514,10 @@ for price_delta in price_deltas:
    number_of_successes = number_of_successes + success_or_failure
 
  log_string(swap_output, "Delta: "+str(price_delta)+", percentage:  "+str(number_of_successes/number_of_trials))
+ simulated_success_rate.append( number_of_successes/number_of_trials )
 
- simulated_success_rate.append(number_of_successes/number_of_trials)
+ print(str(iter_length)+"/"+str(len(price_deltas))+" [--- %s seconds ---" % (time.time() - start_time))
+ iter_length += 1
 
 plt.clf()
 plt.xlabel(r'$P^{*}$')
@@ -520,8 +527,8 @@ plt.yticks(np.arange(0.1, max(yy1)+0.1, 0.1))
 # plt.plot(xx, yy)
 #plt.plot(xx2, yy6, label="Black-Scholes", color="black")
 plt.legend(title=r'Bifi-USDT Ticker (Binance) - SR($P_{*}$)')
-plt.plot(xx2, yy1, label=r'$ estimated \lambda$ ', color="green")
-plt.plot(price_deltas_3, simulated_success_rate, label=r'$ simulated \lambda$ ', color="blue")
+plt.plot(xx2, yy1, label=r'estimated $\lambda$ ', color="green")
+plt.plot(price_deltas_3, simulated_success_rate, label=r'simulated $\lambda$ ', color="blue")
 plt.legend()
   
 

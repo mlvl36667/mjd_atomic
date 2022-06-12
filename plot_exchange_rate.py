@@ -4,17 +4,27 @@
 ######################################################
 import json 
 import matplotlib.pyplot as plt
+import matplotlib
+
 import numpy as np
 
 
-plt.title("BIFI-USDT ticker (Binance)")
-plt.ylabel('price')
-plt.xlabel('time (h)')
+
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+})
 
 
-axes = plt.gca()
-axes.xaxis.label.set_size(20)
-axes.yaxis.label.set_size(20)
+plt.clf()
+
+plt.ylabel(r'price')
+plt.xlabel(r'time (h)')
+
+
 
 yy = []
 xx = []
@@ -33,5 +43,7 @@ with open('/home/c/bifi_prices') as f:
 
 plt.plot(xx, yy)
   
+plt.savefig('bifiusdt.pgf')
+
 plt.show()
 f.close()
