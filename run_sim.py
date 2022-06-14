@@ -200,8 +200,8 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
  #log_string(xml_output, "<max>"+str(pt_2a_eq)+"</max>")
 
 
- if pt_7_eq>pt_5_eq:
-     print('range:',pt_7_eq,pt_5_eq)
+ if pt_7b_eq>pt_5a_eq:
+     print('range:',pt_7b_eq,pt_5a_eq)
  swap_coins(rates,t_0,swap_output, pt_7b_eq+0.01, 0.01, xml_output)
  swap_coins(rates,t_0,swap_output, pt_5a_eq-0.01, 0.01, xml_output)
 ############################################
