@@ -520,6 +520,11 @@ for i in range(15,30):
 
 #######################################################################
 
+rates = []
+with open('/home/c/bifi_prices') as f:
+ for line in f:
+  x, y = line.split(",")
+  rates.append([int(x),float(y)])
 
 price_deltas = [ -0.14, -0.13, -0.12, -0.11,  -0.1, -0.05, 0, 0.01, 0.011, 0.012]
 npprices = np.array(price_deltas) * pt0 + np.array(price_deltas) + pt0
