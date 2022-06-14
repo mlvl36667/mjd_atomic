@@ -6,6 +6,8 @@ real_world_sr.pgf
 swap_output
 limits.xml
 .run.py.swo
+integrand.pgf 
+integrand.pdf
 sr.pdf 
 sr.pgf 
 bifiusdt.pgf
