@@ -90,7 +90,7 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 
  if(ut3acont < ut3astop):
 #  log_string(swap_output, "The swap fails at t3 due to A")
-  log_string(xml_output, "<reason>a_aborts_at_t3:"+str(ut3acont)+"<"+str(ut3astop)+" (exchange_rate: "+str(exchange_rate)+")</reason>")
+  log_string(xml_output, "<reason>a_aborts_at_t3:"+str(ut3acont)+"less"+str(ut3astop)+"</reason>")
   swap_success = False
 # else:
 #  log_string(swap_output, "A would cont. at t3")
@@ -115,7 +115,7 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  if(ut2bcont < ut2bstop):
 #  log_string(swap_output, "The swap fails at t2 due to B")
   swap_success = False
-  log_string(xml_output, "<reason>b_aborts_at_t2: "+str(ut2bcont)+" < "+str(ut2bstop)+" (exchange_rate: "+str(exchange_rate)+", p_t2: "+str(pt_2)+")</reason>")
+  log_string(xml_output, "<reason>b_aborts_at_t2:"+str(ut2bcont)+"less"+str(ut2bstop)+"</reason>")
 # else:
 #  log_string(swap_output, "B would cont. at t2")
 ## t1
@@ -131,7 +131,7 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  if(ut1acont < ut1astop):
 #  log_string(swap_output, "The swap fails at t1 due to A")
   swap_success = False
-  log_string(xml_output, "<reason>a_aborts_at_t1: "+str(ut1acont)+" < "+str(ut1astop)+" (exchange_rate: "+str(exchange_rate)+")</reason>")
+  log_string(xml_output, "<reason>a_aborts_at_t1:"+str(ut1acont)+"less"+str(ut1astop)+"</reason>")
 # else:
 #  log_string(swap_output, "A would cont. at t1")
 
@@ -169,33 +169,30 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
  #ut3astop = exchange_rate / math.exp(ra*(epsilonb+2*taua_h))
  # ut3acont==ut3astop mennyi az exchange_rate
  pt_5a_eq = ((1+alphaa)* pt_5 / math.exp(ra*taub_h)) * math.exp(ra*(epsilonb+2*taua_h))
- log_string(xml_output, "<max>"+str(pt_5a_eq)+"</max>")
+ log_string(xml_output, "<max5>"+str(pt_5a_eq)+"</max5>")
 
 
 # ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
- ut3bstop = pt_7 / math.exp(ra*(epsilonb+2*taua_h))
-
+# ut3bstop = pt_7 / math.exp(ra*(epsilonb+2*taua_h))
+# ut3bcont==ut3bstop mennyi az exchange_rate
  pt_7b_eq = (pt_7 / math.exp(ra*(epsilonb+2*taua_h))) * math.exp(rb*(epsilonb+taua_h)) / (1+alphab)
- log_string(xml_output, "<min>"+str(pt_7b_eq)+"</min>")
+ min_rate=pt_7b_eq
+ log_string(xml_output, "<min7>"+str(min_rate)+"</min7>")
 
  # utility = ut3acont
  # ut2acont =  utility / math.exp(ra*taub_h)
  # ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
  # ut2acont==ut2astop mennyi az exchange_rate
  pt_2a_eq = (ut3acont / math.exp(ra*taub_h)) * math.exp(ra*(taub_h+epsilonb+2*taua_h))
- log_string(xml_output, "<max>"+str(pt_2a_eq)+"</max>")
+ max_rate=min(pt_5a_eq,pt_2a_eq)
+ log_string(xml_output, "<max2>"+str(max_rate)+"</max2>")
 
 
- ut3bcont = ut3bstop
- ut2bcont = ut3bcont / math.exp(rb*taub_h)
- ut2bstop = pt_2
-
- # ut2bcont > ut2bstop
- if(pt_2 > ut3bcont / math.exp(rb*taub_h)):
-  log_string(xml_output, "<min_pt2_b>no_such_minimum_exists (pt_2: "+str(pt_2)+", ut3bcont: "+str(ut3bcont / math.exp(rb*taub_h))+")</min_pt2_b>")
- else:
-  pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
-  log_string(xml_output, "<min_pt2_b>"+str(pt_2b_eq)+"</min_pt2_b>")
+ # utility = ut3bcont
+ # ut2bcont = utility / math.exp(rb*taub_h)
+ # ut2bstop = pt_2
+ # pt_2b_eq = (pt_7 / math.exp(ra*(epsilonb+2*taua_h))) * math.exp(rb*(epsilonb+taua_h)) / (1+alphab)
+ # log_string(xml_output, "<min>"+str(pt_7b_eq)+"</min>")
 ## t1
 
  # utility = ut2acont
@@ -204,11 +201,12 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
  #pt_1a_eq = (ut3acont / math.exp(ra*taub_h)) * math.exp(ra*(taub_h+epsilonb+2*taua_h))
  #log_string(xml_output, "<max>"+str(pt_2a_eq)+"</max>")
 
-
- if pt_7b_eq>pt_5a_eq:
-     print('range:',pt_7b_eq,pt_5a_eq)
- swap_coins(rates,t_0,swap_output, pt_7b_eq+0.01, 0.01, xml_output)
- swap_coins(rates,t_0,swap_output, pt_5a_eq-0.01, 0.01, xml_output)
+ log_string(xml_output, "<max>"+str(max_rate)+"</max>")
+ log_string(xml_output, "<min>"+str(min_rate)+"</min>")
+ if min_rate>max_rate:
+     print('infeasible range:',min_rate,max_rate)
+ swap_coins(rates,t_0,swap_output, min_rate+0.01, 0.01, xml_output)
+ swap_coins(rates,t_0,swap_output, max_rate-0.01, 0.01, xml_output)
 ############################################
 ####### Entry point to the script ##########
 ############################################
