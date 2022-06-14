@@ -409,7 +409,7 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 ####### Entry point to the script ##########
 ############################################
 
-max_rates = 12000
+max_rates = 10000
 
 rates = []
 counter = 0
@@ -443,7 +443,7 @@ log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
 
 length_of_sim = (rates[-1][0]-rates[0][0]) / (1000*60*60)
 
-jump_criteria = 0.012
+jump_criteria = 0.005
 #jump_criteria = 0.01
 
 significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
@@ -533,7 +533,7 @@ for price_delta in price_deltas:
  number_of_successes = 0
  number_of_trials = 0
  number_of_datapoints = 0 
- max_number_of_datapoints = 12000
+ max_number_of_datapoints = 10000
  
  for rate in rates:
   if(number_of_datapoints < max_number_of_datapoints):
