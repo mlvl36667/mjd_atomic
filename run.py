@@ -409,7 +409,7 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 ####### Entry point to the script ##########
 ############################################
 
-max_rates = 15000
+max_rates = 12000
 
 rates = []
 counter = 0
@@ -533,7 +533,7 @@ for price_delta in price_deltas:
  number_of_successes = 0
  number_of_trials = 0
  number_of_datapoints = 0 
- max_number_of_datapoints = 15000
+ max_number_of_datapoints = 12000
  
  for rate in rates:
   if(number_of_datapoints < max_number_of_datapoints):
