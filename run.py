@@ -309,10 +309,10 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 
 
  short_time = 1000 # in ms if t_0 is a UNIX timestamp
- taua = 0.5*60*60*1000 # in ms
- taub = 0.5*60*60*1000 # in ms
- alphaa = 0.15
- alphab = 0.15
+ taua = 1*60*60*1000 # in ms
+ taub = 1*60*60*1000 # in ms
+ alphaa = 0.2
+ alphab = 0.2
  ra = 0.01
  rb = 0.01
  epsilonb = 1
@@ -405,100 +405,6 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
   return 0
 #--------------------------------------------------------------------------------
 
-def calculate_mjd(jump_criteria,calculate_mjd, diff_list):
- length_of_sim = (rates[-1][0]-rates[0][0]) / (60*60)
-
- d_t = 1 / 3600
- 
- significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
- bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
- 
- intensity = len(significant_jumps) / length_of_sim
-
- sigma_hat = np.std(bs_terms) / math.sqrt(d_t)
- mu_hat = (2*np.mean(bs_terms) + sigma_hat*sigma_hat*d_t) / ( 2 * d_t)
- sigma_jhat = math.sqrt(np.var(significant_jumps) - sigma_hat*sigma_hat * d_t)
- mu_jhat = np.mean(significant_jumps) - ( mu_hat - sigma_hat*sigma_hat / 2) * d_t 
-
-
- log_string(swap_output, "Intensity: "+str(intensity))
- log_string(swap_output, "Lenth of sim: "+str(length_of_sim))
- log_string(swap_output, "var_sign: "+str(np.var(significant_jumps)))
- log_string(swap_output, "Significant jumps: "+str(significant_jumps)+" len: "+str(len(significant_jumps)))
- log_string(swap_output, "-------------------")
- log_string(swap_output, "mu_hat: "+str(mu_hat)+" (s)")
- log_string(swap_output, "sigma_hat: "+str(sigma_hat)+" (sqrt(s))")
- log_string(swap_output, "mu_jhat: "+str(mu_jhat)+" (s)")
- log_string(swap_output, "sigma_jhat: "+str(sigma_jhat)+" (s)")
- log_string(swap_output, "-------------------")
- 
- 
- #mu_hat = mu_hat * 3600
- #sigma_hat = sigma_hat * 60
- #mu_jhat = mu_jhat * 3600
- #sigma_jhat = sigma_jhat * 60
- #
- #log_string(swap_output, "-------------------")
- #log_string(swap_output, "mu_hat: "+str(mu_hat)+" (h)")
- #log_string(swap_output, "sigma_hat: "+str(sigma_hat)+" (sqrt(h))")
- #log_string(swap_output, "mu_jhat: "+str(mu_jhat)+" (h)")
- #log_string(swap_output, "sigma_jhat: "+str(sigma_jhat)+" sqrt(h)")
- #log_string(swap_output, "-------------------")
- 
- 
- #######################################################
- ### Calculate Parameters For Black-Scholes         ####
- #######################################################
- 
- jump_criteria = 10000
- 
- significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
- bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
- 
- sigma_hat_gbm = np.std(bs_terms) / math.sqrt(d_t) 
- 
- log_string(swap_output, "np.mean: "+str(np.mean(bs_terms)))
- log_string(swap_output, "-------------------")
- 
- mu_hat_gbm = (np.mean(bs_terms)/d_t + (sigma_hat_gbm*sigma_hat_gbm) / 2 * d_t )
- 
- log_string(swap_output, "sigma_hat_gbm: "+str(sigma_hat_gbm))
- log_string(swap_output, "mu_hat_gbm: "+str(mu_hat_gbm))
- 
- #######################################################
- ### Use estimated data from historical ticker data ####
- #######################################################
- 
- gbm_mu = mu_hat
- gbm_sigma = sigma_hat
- taua = 1
- taub = 1
- alphaa = 0.2
- alphab = 0.2
- ra = 0.01
- rb = 0.01
- pt0 = 2
- epsilona = 1
- epsilonb = 1
- 
- mjd_mu = mu_jhat
- mjd_sigma = sigma_jhat
- mjd_lambda = intensity
- 
- kmax = 40
- 
- ##############################################
- # print SR for real world data from Binance ##
- ##############################################
- yy1 = []
- for i in range(15,30):
-  if(calculate_mjd):
-   yy1.append(success_rate_MJD(i/10, pt0, kmax, intensity, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
-  else:  
-   yy1.append(success_rate_MJD(i/10, pt0, kmax, 0.000001 , taua, 0.00001,   sigma_hat_gbm,  mu_hat_gbm, taub, epsilonb, ra, rb, alphab,  0.00001, alphaa))
-
- return yy1
-
 ############################################
 ####### Entry point to the script ##########
 ############################################
@@ -531,58 +437,141 @@ diff_list = diff.tolist()
 log_string(swap_output, "Maximum of jumps: "+str(np.max(diff)))
 log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
 
+length_of_sim = (rates[-1][0]-rates[0][0]) / (60*60)
+d_t = 1 / len(rates1)
+
+jump_criteria = 0.005
+#jump_criteria = 0.01
+
+significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
+bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
+
+intensity = len(significant_jumps) / length_of_sim
+log_string(swap_output, "Intensity: "+str(intensity))
+log_string(swap_output, "Lenth of sim: "+str(length_of_sim))
+
+log_string(swap_output, "Significant jumps: "+str(significant_jumps)+" len: "+str(len(significant_jumps)))
+sigma_hat = np.std(bs_terms) / math.sqrt(d_t)
+
+
+mu_hat = (2*np.mean(bs_terms) + sigma_hat*sigma_hat*d_t) / ( 2 * d_t)
+
+log_string(swap_output, "var_sign: "+str(np.var(significant_jumps)))
+
+sigma_jhat = math.sqrt(np.var(significant_jumps) - sigma_hat*sigma_hat * d_t)
+
+mu_jhat = np.mean(significant_jumps) - ( mu_hat - sigma_hat*sigma_hat / 2) * d_t 
+
+log_string(swap_output, "-------------------")
+log_string(swap_output, "mu_hat: "+str(mu_hat)+" (s)")
+log_string(swap_output, "sigma_hat: "+str(sigma_hat)+" (sqrt(s))")
+log_string(swap_output, "mu_jhat: "+str(mu_jhat)+" (s)")
+log_string(swap_output, "sigma_jhat: "+str(sigma_jhat)+" (s)")
+log_string(swap_output, "-------------------")
+
+
+#mu_hat = mu_hat * 3600
+#sigma_hat = sigma_hat * 60
+#mu_jhat = mu_jhat * 3600
+#sigma_jhat = sigma_jhat * 60
+#
+#log_string(swap_output, "-------------------")
+#log_string(swap_output, "mu_hat: "+str(mu_hat)+" (h)")
+#log_string(swap_output, "sigma_hat: "+str(sigma_hat)+" (sqrt(h))")
+#log_string(swap_output, "mu_jhat: "+str(mu_jhat)+" (h)")
+#log_string(swap_output, "sigma_jhat: "+str(sigma_jhat)+" sqrt(h)")
+#log_string(swap_output, "-------------------")
+
+
+#######################################################
+### Calculate Parameters For Black-Scholes         ####
+#######################################################
+
+jump_criteria = 10000
+
+bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
+
+sigma_hat_gbm = np.std(bs_terms) / math.sqrt(d_t) 
+
+log_string(swap_output, "np.mean: "+str(np.mean(bs_terms)))
+log_string(swap_output, "-------------------")
+
+mu_hat_gbm = (np.mean(bs_terms)/d_t + (sigma_hat_gbm*sigma_hat_gbm) / 2 * d_t )
+
+log_string(swap_output, "sigma_hat_gbm: "+str(sigma_hat_gbm))
+log_string(swap_output, "mu_hat_gbm: "+str(mu_hat_gbm))
+
+
+#######################################################
+### Use estimated data from historical ticker data ####
+#######################################################
+
+gbm_mu = mu_hat
+gbm_sigma = sigma_hat
+taua = 1
+taub = 1
+alphaa = 0.2
+alphab = 0.2
+ra = 0.01
+rb = 0.01
+pt0 = 2
+epsilona = 1
+epsilonb = 1
+
+mjd_mu = mu_jhat
+mjd_sigma = sigma_jhat
+mjd_lambda = intensity
+
+kmax = 2
+
+##############################################
+# print SR for real world data from Binance ##
+##############################################
+xx2 = []
 yy1 = []
 yy2 = []
-yy3 = []
-yy4 = []
-yy5 = []
-xx2 = []
-
-#yy1 = calculate_mjd(0.010,True, diff_list)
-#yy2 = calculate_mjd(0.009,True, diff_list)
-#yy3 = calculate_mjd(0.008,True, diff_list)
-#yy4 = calculate_mjd(0.007,True, diff_list)
-yy5 = calculate_mjd(0.006,True, diff_list)
-#yy6 = calculate_mjd(0.005,True, diff_list)
-#yy7 = calculate_mjd(0.001,True, diff_list)
-
-yy8 = calculate_mjd(0.01,False, diff_list)
+yy6 = []
+yy7 = []
+for i in range(15,30):
+# yy1.append(success_rate_MJD(i/10, pt0, kmax, intensity, taua, mjd_sigma, gbm_sigma, gbm_mu, taub, epsilonb, ra, rb, alphab,  mjd_mu, alphaa))
+# yy6.append(success_rate_MJD(i/10, pt0, kmax, 0.000001 , taua, 0.00001,   sigma_hat_gbm,  mu_hat_gbm, taub, epsilonb, ra, rb, alphab,  0.00001, alphaa))
+ xx2.append((i/10)/2)
 
 
 #######################################################################
 
-# rates = []
-# with open('/home/e/bifi_prices') as f:
-#  for line in f:
-#   x, y = line.split(",")
-#   rates.append([int(x),float(y)])
-# 
-# price_deltas = [ -0.15, -0.1, -0.05, 0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-# npprices = np.array(price_deltas) * pt0 + np.array(price_deltas) + pt0
-# price_deltas_3 = npprices.tolist()
-# simulated_success_rate = []
-# 
-# iter_length = 0
-# for price_delta in price_deltas:
-#  start_time = time.time()
-# 
-#  number_of_successes = 0
-#  number_of_trials = 0
-#  number_of_datapoints = 0 
-#  max_number_of_datapoints = 1000
-#  
-#  for rate in rates:
-#   if(number_of_datapoints < max_number_of_datapoints):
-#    success_or_failure = swap_coins(rates,rate[0],swap_output, rate[1] + price_delta*rate[1], price_delta, xml_output)
-#    number_of_trials += 1
-#    number_of_datapoints += 1
-#    number_of_successes = number_of_successes + success_or_failure
-# 
-#  log_string(swap_output, "Delta: "+str(price_delta)+", percentage:  "+str(number_of_successes/number_of_trials))
-#  simulated_success_rate.append( number_of_successes/number_of_trials )
-# 
-#  print(str(iter_length)+"/"+str(len(price_deltas))+" [--- %s seconds ---" % (time.time() - start_time))
-#  iter_length += 1
+rates = []
+with open('/home/e/bifi_prices') as f:
+ for line in f:
+  x, y = line.split(",")
+  rates.append([int(x),float(y)])
+
+price_deltas = [ -0.3, -0.2, -0.15, -0.1, -0.05, 0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4]
+npprices = (np.array(price_deltas) * pt0 + np.array(price_deltas) + pt0)/2
+price_deltas_3 = npprices.tolist()
+simulated_success_rate = []
+
+iter_length = 0
+for price_delta in price_deltas:
+ start_time = time.time()
+
+ number_of_successes = 0
+ number_of_trials = 0
+ number_of_datapoints = 0 
+ max_number_of_datapoints = int(sys.argv[1])
+ 
+ for rate in rates:
+  if(number_of_datapoints < max_number_of_datapoints):
+   success_or_failure = swap_coins(rates,rate[0],swap_output, rate[1] + price_delta*rate[1], price_delta, xml_output)
+   number_of_trials += 1
+   number_of_datapoints += 1
+   number_of_successes = number_of_successes + success_or_failure
+
+ log_string(swap_output, "Delta: "+str(price_delta)+", percentage:  "+str(number_of_successes/number_of_trials))
+ simulated_success_rate.append( number_of_successes/number_of_trials )
+
+ print(str(iter_length)+"/"+str(len(price_deltas))+" [--- %s seconds ---" % (time.time() - start_time))
+ iter_length += 1
 
 # current = 0
 # for rate in rates:
@@ -643,32 +632,16 @@ yy8 = calculate_mjd(0.01,False, diff_list)
  
 # sys.exit(0)
 
-for i in range(15,30):
- xx2.append((i/10)/2)
-
-for i in range(len(yy8)):
- print(xx2[i],yy8[i])
-
-for i in range(len(yy5)):
- print(xx2[i],yy5[i])
-
 plt.clf()
 plt.xlabel(r'$P^{*}$')
 plt.ylabel('$SR(P^{*})$')
 plt.grid(axis='y', color='0.95')
-plt.yticks(np.arange(0.1, 1.1, 0.1))
+plt.yticks(np.arange(0.1, max(simulated_success_rate)+0.3, 0.1))
 # plt.plot(xx, yy)
+#plt.plot(xx2, yy6, label="Black-Scholes", color="black")
 plt.legend(title=r'Bifi-USDT Ticker (Binance) - SR($P_{*}$)')
-#plt.plot(xx2, yy1, label=r'SR_{est} crit = 0.010', color="red")
-#plt.plot(xx2, yy2, label=r'SR_{est} crit = 0.009', color="blue")
-#plt.plot(xx2, yy3, label=r'SR_{est} crit = 0.008', color="yellow")
-#plt.plot(xx2, yy4, label=r'SR_{est} crit = 0.007', color="purple")
-plt.plot(xx2, yy5, label=r'SR_{est} crit = 0.006', color="green")
-#plt.plot(xx2, yy6, label=r'SR_{est} crit = 0.005', color="pink")
-#plt.plot(xx2, yy7, label=r'SR_{est} crit = 0.001', color="brown")
-plt.plot(xx2, yy8, label="Black-Scholes", color="black")
-
-#plt.plot(price_deltas_3, simulated_success_rate, label=r'SR_{sim}$ ', color="blue")
+#plt.plot(xx2, yy1, label=r'SR_{est} ', color="orange")
+plt.plot(price_deltas_3, simulated_success_rate, label=r'SR_{sim}$ ', color="blue")
 plt.legend()
   
 
@@ -676,8 +649,7 @@ plt.savefig('real_world_sr.pgf')
 plt.savefig("real_world_sr.pdf", bbox_inches='tight')
 
 xml_output.close()
- 
-swap_output.close() 
+swap_output.close()
 
 sys.exit(0)
 
