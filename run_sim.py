@@ -24,8 +24,8 @@ matplotlib.rcParams.update({
 short_time = 1 # in ms if t_0 is a UNIX timestamp
 taua = 60*60 # in ms
 taub = 60*60 # in ms
-alphaa = 0.01
-alphab = 0.01
+alphaa = 0.2
+alphab = 0.2
 ra = 0.01
 rb = 0.01
 epsilonb = 1
@@ -54,6 +54,7 @@ def get_coin_price_range(t,rates):
 def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  global short_time, taua, taub, alphaa, alphab, ra, rb, epsilonb, swap_success
 
+ swap_success = True
  taua_h = taua / (60*60)
  taub_h = taub / (60*60)
 
@@ -191,7 +192,7 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
  # ut2bcont > ut2bstop
  if(pt_2 > ut3bcont / math.exp(rb*taub_h)):
   log_string(xml_output, "<min_pt2_b>no_such_minimum_exists (pt_2: "+str(pt_2)+", ut3bcont: "+str(ut3bcont / math.exp(rb*taub_h))+")</min_pt2_b>")
-  pt_2b_eq = pt_7b_eq
+  pt_2b_eq = pt_2a_eq+0.01
  else:
   pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
   log_string(xml_output, "<min_pt2_b>"+str(pt_2b_eq)+"</min_pt2_b>")
@@ -211,8 +212,11 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
 
  if min_rate>max_rate:
      print('infeasible range:',min_rate,max_rate)
- swap_coins(rates,t_0,swap_output, min_rate+0.01, 0.01, xml_output)
- swap_coins(rates,t_0,swap_output, max_rate-0.01, 0.01, xml_output)
+     return False
+ else:
+     swap_coins(rates,t_0,swap_output, min_rate+0.01, 0.01, xml_output)
+     swap_coins(rates,t_0,swap_output, max_rate-0.01, 0.01, xml_output)
+     return True
 ############################################
 ####### Entry point to the script ##########
 ############################################
@@ -338,6 +342,8 @@ current = 0
 filter=0
 filter_step=60
 time=-1
+succnum=0
+failnum=0
 for rate in tqdm(rates[:-4*60*60]):
  time+=1
  if time % filter_step!=0:
@@ -346,8 +352,11 @@ for rate in tqdm(rates[:-4*60*60]):
  log_string(xml_output, "<datapoint>")
  log_string(xml_output, "<rate>"+str(rate)+"</rate>")
 
- swap_coins_range(rates,time,swap_output, xml_output)
-
+ succeed=swap_coins_range(rates,time,swap_output, xml_output)
+ if succeed:
+     succnum+=1
+ else:
+     failnum+=1
  #price_delta = 0
  #while( swap_coins(rates,time,swap_output, rate + price_delta*rate, price_delta, xml_output) == 1 ):
  # price_delta = price_delta - 0.01
@@ -397,6 +406,8 @@ for rate in tqdm(rates[:-4*60*60]):
  #print('simulate:'+str(current)+"/"+str(len(rates)//filter_step))
  current = current + 1
 
+print('suceed',succnum,'failed',failnum)
+log_string(xml_output, "<successrate>"+str(succnum/(succnum+failnum))+"</successrate>")
 log_string(xml_output, '</simulation>')
 xml_output.close()
 sys.exit(0)
