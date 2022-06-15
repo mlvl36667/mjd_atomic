@@ -13,6 +13,22 @@ import matplotlib.pyplot as plt
 from scipy.integrate import quad
 from tqdm import tqdm # progress bar
 
+import argparse
+
+aparser = argparse.ArgumentParser()
+aparser.add_argument("-fig", help="The output is a figure", action='store_true')
+aparser.add_argument("-short_time", type=int, help="Parameter t_0 in [sec]", default=1)
+aparser.add_argument("-price_avg", type=int, help="Use averaging of prices", default=1)
+aparser.add_argument("-taua", type=float, help="Parameter tau_a in [hour]", default=1)
+aparser.add_argument("-taub", type=float, help="Parameter tau_b in [hour]", default=1)
+aparser.add_argument("-alphaa", type=float, help="Parameter alpha_a", default=0.1)
+aparser.add_argument("-alphab", type=float, help="Parameter alpha_b", default=0.1)
+aparser.add_argument("-ra", type=float, help="Parameter r_a", default=0.01)
+aparser.add_argument("-rb", type=float, help="Parameter r_b", default=0.01)
+aparser.add_argument("-epsilonb", type=int, help="Paramter epsilonb", default=1)
+args = aparser.parse_args()
+
+
 matplotlib.use("pgf")
 matplotlib.rcParams.update({
     "pgf.texsystem": "pdflatex",
@@ -21,14 +37,14 @@ matplotlib.rcParams.update({
     'pgf.rcfonts': False,
 })
 
-short_time = 1 # in ms if t_0 is a UNIX timestamp
-taua = 60*60 # in ms
-taub = 60*60 # in ms
-alphaa = 0.2
-alphab = 0.2
-ra = 0.01
-rb = 0.01
-epsilonb = 1 # 1
+short_time = args.short_time # in ms if t_0 is a UNIX timestamp
+taua = args.taua*60*60 # in s
+taub = args.taub*60*60 # in s
+alphaa = args.alphaa
+alphab = args.alphab
+ra = args.ra
+rb = args.rb
+epsilonb = args.epsilonb # 1
 
 def log_string(file_descriptor,string):
     file_descriptor.write(string+"\n")
@@ -40,14 +56,17 @@ def get_coin_price(t,rates):
  sys.exit(1)
  return 0
 
+price_average=args.price_avg
+
 def get_coin_price_range(t,rates):
- if(t+10<len(rates)):
+ global price_average
+ if(t+price_average<len(rates)):
    sum_rate=0
    i=0
-   for rate in rates[t:t+10]:
+   for rate in rates[t:t+price_average]:
      sum_rate+=rate
      i+=1
-   return sum_rate/10
+   return sum_rate/price_average
  print("Price not found for "+str(t)+", returning zero..."+str(len(rates)))
  return 0
 
@@ -227,7 +246,8 @@ with open('bifi_price_list') as f:
 xml_output = open("limits.xml", "w") # used to be "a"
 log_string(xml_output, '<?xml version="1.0" encoding="UTF-8"?>')
 log_string(xml_output, '<simulation>')
-
+for arg in vars(args):
+    log_string(xml_output, '<'+arg+'>'+str(getattr(args, arg))+'</'+arg+'>')
 swap_output = open("swap_output", "a")
 log_string(swap_output, "------------------------")
 log_string(swap_output, "Launching the atomic swap simulator at "+str(datetime.datetime.now()))
