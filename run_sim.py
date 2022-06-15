@@ -220,7 +220,8 @@ with open('bifi_price_list') as f:
   rates.append(float(line))
 
 xml_output = open("limits.xml", "w") # used to be "a"
-log_string(xml_output, ' <?xml version="1.0" encoding="UTF-8"?>')
+log_string(xml_output, '<?xml version="1.0" encoding="UTF-8"?>')
+log_string(xml_output, '<simulation>')
 
 swap_output = open("swap_output", "a")
 log_string(swap_output, "------------------------")
@@ -393,6 +394,8 @@ for rate in tqdm(rates[:-4*60*60]):
  #print('simulate:'+str(current)+"/"+str(len(rates)//filter_step))
  current = current + 1
 
+log_string(xml_output, '</simulation>')
+xml_output.close()
 sys.exit(0)
 
 plt.clf()
@@ -411,7 +414,7 @@ plt.legend()
 plt.savefig('real_world_sr.pgf')
 plt.savefig("real_world_sr.pdf", bbox_inches='tight')
 
-xml_output.close()
+
 swap_output.close()
 
 sys.exit(0)
