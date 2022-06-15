@@ -13,6 +13,22 @@ import matplotlib.pyplot as plt
 from scipy.integrate import quad
 from tqdm import tqdm # progress bar
 
+import argparse
+
+aparser = argparse.ArgumentParser()
+aparser.add_argument("-fig", help="The output is a figure", action='store_true')
+aparser.add_argument("-short_time", type=int, help="Parameter t_0 in [sec]", default=1)
+aparser.add_argument("-price_avg", type=int, help="Use averaging of prices", default=1)
+aparser.add_argument("-taua", type=float, help="Parameter tau_a in [hour]", default=1)
+aparser.add_argument("-taub", type=float, help="Parameter tau_b in [hour]", default=1)
+aparser.add_argument("-alphaa", type=float, help="Parameter alpha_a", default=0.1)
+aparser.add_argument("-alphab", type=float, help="Parameter alpha_b", default=0.1)
+aparser.add_argument("-ra", type=float, help="Parameter r_a", default=0.01)
+aparser.add_argument("-rb", type=float, help="Parameter r_b", default=0.01)
+aparser.add_argument("-epsilonb", type=int, help="Paramter epsilonb", default=1)
+args = aparser.parse_args()
+
+
 matplotlib.use("pgf")
 matplotlib.rcParams.update({
     "pgf.texsystem": "pdflatex",
@@ -21,14 +37,14 @@ matplotlib.rcParams.update({
     'pgf.rcfonts': False,
 })
 
-short_time = 1 # in ms if t_0 is a UNIX timestamp
-taua = 60*60 # in ms
-taub = 60*60 # in ms
-alphaa = 0.01
-alphab = 0.01
-ra = 0.01
-rb = 0.01
-epsilonb = 1
+short_time = args.short_time # in ms if t_0 is a UNIX timestamp
+taua = args.taua*60*60 # in s
+taub = args.taub*60*60 # in s
+alphaa = args.alphaa
+alphab = args.alphab
+ra = args.ra
+rb = args.rb
+epsilonb = args.epsilonb # 1
 
 def log_string(file_descriptor,string):
     file_descriptor.write(string+"\n")
@@ -40,20 +56,24 @@ def get_coin_price(t,rates):
  sys.exit(1)
  return 0
 
+price_average=args.price_avg
+
 def get_coin_price_range(t,rates):
- if(t+10<len(rates)):
+ global price_average
+ if(t+price_average<len(rates)):
    sum_rate=0
    i=0
-   for rate in rates[t:t+10]:
+   for rate in rates[t:t+price_average]:
      sum_rate+=rate
      i+=1
-   return sum_rate/10
+   return sum_rate/price_average
  print("Price not found for "+str(t)+", returning zero..."+str(len(rates)))
  return 0
 
 def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  global short_time, taua, taub, alphaa, alphab, ra, rb, epsilonb, swap_success
 
+ swap_success = True
  taua_h = taua / (60*60)
  taub_h = taub / (60*60)
 
@@ -72,14 +92,15 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  pt_6 = get_coin_price_range(t_6,rates)
  t_7 = t_3 + taub + taub
  pt_7 = get_coin_price_range(t_7,rates)
-# log_string(swap_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
-#
-# log_string(swap_output, "pt1: "+str(pt_1))
-# log_string(swap_output, "pt2: "+str(pt_2))
-# log_string(swap_output, "pt3: "+str(pt_3))
-# log_string(swap_output, "pt4: "+str(pt_4))
-# log_string(swap_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
-# log_string(swap_output, "pt6: "+str(pt_6))
+ #
+ log_string(xml_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
+ log_string(xml_output, "pt1: "+str(pt_1))
+ log_string(xml_output, "pt2: "+str(pt_2))
+ log_string(xml_output, "pt3: "+str(pt_3))
+ log_string(xml_output, "pt4: "+str(pt_4))
+ log_string(xml_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
+ log_string(xml_output, "pt6: "+str(pt_6))
+ log_string(xml_output, "pt7: "+str(pt_7))
 
 ## t2
  ut3acont = (1+alphaa)* pt_5 / math.exp(ra*taub_h)
@@ -95,19 +116,12 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 # else:
 #  log_string(swap_output, "A would cont. at t3")
 
- if(ut3acont > ut3astop): # ez így biztos hogy jó?
-  utility = ut3acont
- else:
-  utility = ut3astop
-
+ utility = max(ut3acont , ut3astop)
 ## t2
  ut2acont =  utility / math.exp(ra*taub_h)
  ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
 
- if(ut3bcont > ut3bstop): # ez így biztos hogy jó?
-  utility = ut3bcont
- else:
-  utility = ut3bstop
+ utility = max(ut3bcont,ut3bstop)
 
  ut2bcont = utility / math.exp(rb*taub_h)
  ut2bstop = pt_2
@@ -186,30 +200,40 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
  log_string(xml_output, "<max2>"+str(pt_2a_eq)+"</max2>")
 
  ut3bcont = ut3bstop
- # ut2bcont = ut3bcont / math.exp(rb*taub_h)
- # ut2bstop = pt_2
- # ut2bcont > ut2bstop
- if(pt_2 > ut3bcont / math.exp(rb*taub_h)):
-  log_string(xml_output, "<min_pt2_b>no_such_minimum_exists (pt_2: "+str(pt_2)+", ut3bcont: "+str(ut3bcont / math.exp(rb*taub_h))+")</min_pt2_b>")
-  pt_2b_eq = pt_7b_eq
- else:
-  pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
-  log_string(xml_output, "<min_pt2_b>"+str(pt_2b_eq)+"</min_pt2_b>")
+ # ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
+ # utility = max(ut3bcont,ut3bstop)
+ # ut2bcont = utility / math.exp(rb*taub_h)
+ pt_2b_eq = math.exp(rb*(epsilonb+taua_h)) * math.exp(rb*taub_h) / (1+alphab)
+ # # ut2bstop = pt_2
+ # # ut2bcont > ut2bstop
+ # if(pt_2 > ut3bcont / math.exp(rb*taub_h)):
+ #  log_string(xml_output, "<min_pt2_b>no_such_minimum_exists (pt_2: "+str(pt_2)+", ut3bcont: "+str(ut3bcont / math.exp(rb*taub_h))+")</min_pt2_b>")
+ #  pt_2b_eq = pt_2a_eq+0.01
+ # else:
+ #  pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
+ #  log_string(xml_output, "<min_pt2_b>"+str(pt_2b_eq)+"</min_pt2_b>")
+ # ### for debugging:
+ # #pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
 ## t1
+ #ut2acont =  ut3acont / math.exp(ra*taub_h)
+ #ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
+ pt_1a_eq = (ut3acont / math.exp(ra*taub_h)) * math.exp(ra*(taub_h+epsilonb+2*taua_h))
 
- # utility = ut2acont
- # ut1acont = utility / math.exp(ra*taua_h)
- # ut1astop = exchange_rate
- #pt_1a_eq = (ut3acont / math.exp(ra*taub_h)) * math.exp(ra*(taub_h+epsilonb+2*taua_h))
- #log_string(xml_output, "<max>"+str(pt_2a_eq)+"</max>")
+ log_string(xml_output, "<max1>"+str(pt_2a_eq)+"</max1>")
  min_rate=max(pt_7b_eq,pt_2b_eq)
- max_rate=min(pt_5a_eq,pt_2a_eq)
- log_string(xml_output, "<max>"+str(max_rate)+"</max>")
- log_string(xml_output, "<min>"+str(min_rate)+"</min>")
+ max_rate=min(pt_5a_eq,pt_2a_eq,pt_1a_eq)
+ log_string(xml_output, "<max_rate>"+str(max_rate)+"</max_rate>")
+ log_string(xml_output, "<min_rate>"+str(min_rate)+"</min_rate>")
+ log_string(xml_output, "<max_rel_rate>"+str(max_rate/pt_0)+"</max_rel_rate>")
+ log_string(xml_output, "<min_rel_rate>"+str(min_rate/pt_0)+"</min_rel_rate>")
+
  if min_rate>max_rate:
      print('infeasible range:',min_rate,max_rate)
- swap_coins(rates,t_0,swap_output, min_rate+0.01, 0.01, xml_output)
- swap_coins(rates,t_0,swap_output, max_rate-0.01, 0.01, xml_output)
+     return False
+ else:
+     swap_coins(rates,t_0,swap_output, min_rate+0.01, 0.01, xml_output)
+     swap_coins(rates,t_0,swap_output, max_rate-0.01, 0.01, xml_output)
+     return True
 ############################################
 ####### Entry point to the script ##########
 ############################################
@@ -220,8 +244,10 @@ with open('bifi_price_list') as f:
   rates.append(float(line))
 
 xml_output = open("limits.xml", "w") # used to be "a"
-log_string(xml_output, ' <?xml version="1.0" encoding="UTF-8"?>')
-
+log_string(xml_output, '<?xml version="1.0" encoding="UTF-8"?>')
+log_string(xml_output, '<simulation>')
+for arg in vars(args):
+    log_string(xml_output, '<'+arg+'>'+str(getattr(args, arg))+'</'+arg+'>')
 swap_output = open("swap_output", "a")
 log_string(swap_output, "------------------------")
 log_string(swap_output, "Launching the atomic swap simulator at "+str(datetime.datetime.now()))
@@ -233,7 +259,7 @@ rates1 = []
 for rate in rates:
  rates1.append(rate)
 
-diff = np.diff(rates1) / rates1[:-1]
+diff = np.diff(rates1) #/ rates1[:-1]
 
 diff_list = diff.tolist()
 
@@ -334,6 +360,8 @@ current = 0
 filter=0
 filter_step=60
 time=-1
+succnum=0
+failnum=0
 for rate in tqdm(rates[:-4*60*60]):
  time+=1
  if time % filter_step!=0:
@@ -342,8 +370,11 @@ for rate in tqdm(rates[:-4*60*60]):
  log_string(xml_output, "<datapoint>")
  log_string(xml_output, "<rate>"+str(rate)+"</rate>")
 
- swap_coins_range(rates,time,swap_output, xml_output)
-
+ succeed=swap_coins_range(rates,time,swap_output, xml_output)
+ if succeed:
+     succnum+=1
+ else:
+     failnum+=1
  #price_delta = 0
  #while( swap_coins(rates,time,swap_output, rate + price_delta*rate, price_delta, xml_output) == 1 ):
  # price_delta = price_delta - 0.01
@@ -393,6 +424,10 @@ for rate in tqdm(rates[:-4*60*60]):
  #print('simulate:'+str(current)+"/"+str(len(rates)//filter_step))
  current = current + 1
 
+print('suceed',succnum,'failed',failnum)
+log_string(xml_output, "<successrate>"+str(succnum/(succnum+failnum))+"</successrate>")
+log_string(xml_output, '</simulation>')
+xml_output.close()
 sys.exit(0)
 
 plt.clf()
@@ -411,7 +446,7 @@ plt.legend()
 plt.savefig('real_world_sr.pgf')
 plt.savefig("real_world_sr.pdf", bbox_inches='tight')
 
-xml_output.close()
+
 swap_output.close()
 
 sys.exit(0)

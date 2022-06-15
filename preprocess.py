@@ -47,8 +47,9 @@ plt.bar(delta_hist.keys(), delta_hist.values(), 1.0, color='g')
 plt.yscale("log")
 plt.show()
 
-price_output = open("bifi_price_list", "a")
+price_output = open("bifi_price_list", "w")
 time=rates[0][0]//delta
+time0=time
 for x,y in rates:
     if x>time*delta:
         dx= x// delta
@@ -56,4 +57,5 @@ for x,y in rates:
         for i in range(dx-time):
             price_output.write(str(y)+"\n")#+' at '+str(x)
             time+=1
+print('time:',time-time0)
 price_output.close()
