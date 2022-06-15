@@ -50,7 +50,7 @@ def success_rate_MJD(pstar, pt0, kmax, lmb, taua, mjd_sigma, gbm_sigma, gbm_mu, 
  print("pt2_high:"+str(pt2_high))
 
  if(not found_low or not found_high):
-  return 0 
+  return 0
 
  return quad(success_rate_MJD_integrand, pt2_low, pt2_high, args=(pstar,ra, epsilonb,mjd_mu, alphaa, taub, pt0, kmax, lmb, taua, mjd_sigma, gbm_sigma, gbm_mu))[0]
 def mjd_expectation(tau, pt, lmb,  mjd_mu, mjd_sigma, gbm_mu):
@@ -137,11 +137,11 @@ def run_simulation():
 
 
  simulation_output = open("simulation_output", "a")
- 
+
  log_string(simulation_output, "------------------------")
  log_string(simulation_output, "Launching the MJD simulator at "+str(datetime.datetime.now()))
  log_string(simulation_output, "------------------------")
- 
+
  log_string(simulation_output, "GBM Parameters ")
 
  log_string(simulation_output, "gbm_mu: "+str(gbm_mu))
@@ -166,7 +166,7 @@ def run_simulation():
  log_string(simulation_output, "------------------------")
  log_string(simulation_output, "Calculating MJD ")
  log_string(simulation_output, "------------------------")
- 
+
  pstar = 1.6
  eq_price_at_t3 = pt3eq_mjd(pstar, mjd_lambda,ra, epsilonb, taua, taub, mjd_mu, mjd_sigma, alphaa, gbm_mu)
 
@@ -177,13 +177,13 @@ def run_simulation():
  for i in range(10,50):
   yy.append(pdf_mjd(i/10, pt0, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu))
   xx.append(i/10)
-  
+
  xx3 = []
  yy3 = []
  for i in range(10,50):
   yy3.append(cdf_mjd(i/10, pt0, kmax, mjd_lambda, taub, mjd_sigma, gbm_sigma, gbm_mu))
   xx3.append(i/10)
-  
+
 #######################
 # print the integrand
 #######################
@@ -215,7 +215,7 @@ def run_simulation():
  plt.plot(xx2, yy6, label=r'$ \sigma$ = 0.125', color="orange")
 # plt.plot(xx2, yy5, label=r'Real BS', color="yellow")
  plt.legend(title=r'Integrand of SR($P_{*}$)')
-   
+
  plt.savefig("integrand.pdf", bbox_inches='tight')
  plt.savefig('integrand.pgf')
 # sys.exit(0)
@@ -250,10 +250,10 @@ def run_simulation():
  plt.plot(xx2, yy7, label=r'$ \lambda$ = 0.3', color="purple")
  plt.plot(xx2, yy6, label="Black-Scholes", color="black")
  plt.legend(title=r'$U^{cont}_{B}(t_2)$')
-   
+
  plt.savefig('ut2bcont.pgf')
  plt.savefig("ut2bcont.pdf", bbox_inches='tight')
- 
+
 #######################
 # print SR
 #######################
@@ -280,7 +280,7 @@ def run_simulation():
  plt.plot(xx2, yy1, label=r'$ \lambda$ = 0.1', color="red")
  plt.plot(xx2, yy7, label=r'$ \lambda$ = 0.3', color="purple")
  plt.legend()
-   
+
 
  plt.savefig('sr.pgf')
  plt.savefig("sr.pdf", bbox_inches='tight')
@@ -290,7 +290,7 @@ def run_simulation():
  log_string(simulation_output, "------------------------")
  log_string(simulation_output, "Finalizing simulation output at "+str(datetime.datetime.now()))
  log_string(simulation_output, "------------------------")
- 
+
  simulation_output.close()
 
 def get_coin_price(t,rates):
@@ -329,9 +329,9 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  pt_3 = get_coin_price(t_3,rates)
  t_4 = t_3 + epsilonb
  pt_4 = get_coin_price(t_4,rates)
- t_5 = t_3 + taub 
+ t_5 = t_3 + taub
  pt_5 = get_coin_price(t_5,rates)
- t_6 = t_4 + taua 
+ t_6 = t_4 + taua
  pt_6 = get_coin_price(t_6,rates)
 
 # log_string(swap_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
@@ -356,7 +356,7 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
   swap_success = False
 # else:
 #  log_string(swap_output, "A would cont. at t3")
- 
+
  if(ut3acont > ut3astop): # ez így biztos hogy jó?
   utility = ut3acont
  else:
@@ -418,7 +418,7 @@ with open('/home/c/bifi_prices') as f:
   x, y = line.split(",")
   if(counter < max_rates):
    rates.append([int(x),float(y)])
-  counter += 1  
+  counter += 1
 
 xml_output = open("limits.xml", "a")
 log_string(xml_output, ' <?xml version="1.0" encoding="UTF-8"?>')
@@ -433,8 +433,8 @@ log_string(swap_output, "Now calculating jumps")
 rates1 = []
 for rate in rates:
  rates1.append(rate[1])
- 
-diff = np.diff(rates1) / rates1[:-1]
+
+diff = np.diff(rates1) # / rates1[:-1]
 
 diff_list = diff.tolist()
 
@@ -537,9 +537,9 @@ for price_delta in price_deltas:
 
  number_of_successes = 0
  number_of_trials = 0
- number_of_datapoints = 0 
+ number_of_datapoints = 0
  max_number_of_datapoints = 10000
- 
+
  for rate in rates:
   if(number_of_datapoints < max_number_of_datapoints):
    success_or_failure = swap_coins(rates,rate[0],swap_output, rate[1] + price_delta*rate[1], price_delta, xml_output)
@@ -555,28 +555,28 @@ for price_delta in price_deltas:
 
 # current = 0
 # for rate in rates:
-# 
+#
 #  log_string(xml_output, "<datapoint>")
 #  log_string(xml_output, "<rate>"+str(rate[1])+"</rate>")
-# 
+#
 #  price_delta = 0
 #  while( swap_coins(rates,rate[0],swap_output, rate[1] + price_delta*rate[1], price_delta, xml_output) == 1 ):
 #   price_delta = price_delta - 0.01
-# 
-# 
-# 
+#
+#
+#
 #  if(price_delta != 0):
 #   price_delta = price_delta + 0.002
 #  log_string(xml_output, "<lower><pricedelta>"+str(price_delta)+"</pricedelta><pstar>"+str(rate[1] + price_delta*rate[1])+"</pstar></lower>")
-# 
+#
 #  price_delta = 0
 #  while( swap_coins(rates,rate[0],swap_output, rate[1] + price_delta*rate[1], price_delta, xml_output) == 1 ):
 #   price_delta = price_delta + 0.002
-# 
+#
 #  if(price_delta != 0):
 #   price_delta = price_delta - 0.002
 #  log_string(xml_output, "<upper><pricedelta>"+str(price_delta)+"</pricedelta><pstar>"+str(rate[1] + price_delta*rate[1])+"</pstar></upper>")
-# 
+#
 #  t_0 = rate[0]
 #  short_time = 1000 # in ms if t_0 is a UNIX timestamp
 #  taua = 3*60*60*1000 # in ms
@@ -586,10 +586,10 @@ for price_delta in price_deltas:
 #  ra = 0.01
 #  rb = 0.01
 #  epsilonb = 1
-# 
+#
 #  taua_h = taua / (60*60*1000)
 #  taub_h = taub / (60*60*1000)
-# 
+#
 #  pt_0 = get_coin_price(t_0,rates)
 #  t_1 = t_0 + short_time
 #  pt_1 = get_coin_price(t_1,rates)
@@ -603,13 +603,13 @@ for price_delta in price_deltas:
 #  pt_5 = get_coin_price(t_5,rates)
 #  t_6 = t_4 + taua
 #  pt_6 = get_coin_price(t_6,rates)
-# 
+#
 #  log_string(xml_output, "<prices><pt0>"+str(pt_0)+"</pt0><pt1>"+str(pt_1)+"</pt1><pt2>"+str(pt_2)+"</pt2><pt3>"+str(pt_3)+"</pt3><pt4>"+str(pt_4)+"</pt4><pt5>"+str(pt_5)+"</pt5></prices>")
-# 
+#
 #  log_string(xml_output, "</datapoint>")
 #  print(str(current)+"/"+str(len(rates)))
 #  current = current + 1
- 
+
 # sys.exit(0)
 
 plt.clf()
@@ -623,7 +623,7 @@ plt.legend(title=r'Bifi-USDT Ticker (Binance) - SR($P_{*}$)')
 plt.plot(xx2, yy1, label=r'SR_{est} ', color="green")
 plt.plot(price_deltas_3, simulated_success_rate, label=r'SR_{sim}$ ', color="blue")
 plt.legend()
-  
+
 
 plt.savefig('real_world_sr.pgf')
 plt.savefig("real_world_sr.pdf", bbox_inches='tight')

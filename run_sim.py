@@ -259,7 +259,7 @@ rates1 = []
 for rate in rates:
  rates1.append(rate)
 
-diff = np.diff(rates1) / rates1[:-1]
+diff = np.diff(rates1) #/ rates1[:-1]
 
 diff_list = diff.tolist()
 
