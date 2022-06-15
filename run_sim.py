@@ -28,7 +28,7 @@ alphaa = 0.2
 alphab = 0.2
 ra = 0.01
 rb = 0.01
-epsilonb = 1
+epsilonb = 1 # 1
 
 def log_string(file_descriptor,string):
     file_descriptor.write(string+"\n")
@@ -73,14 +73,15 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  pt_6 = get_coin_price_range(t_6,rates)
  t_7 = t_3 + taub + taub
  pt_7 = get_coin_price_range(t_7,rates)
-# log_string(swap_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
-#
-# log_string(swap_output, "pt1: "+str(pt_1))
-# log_string(swap_output, "pt2: "+str(pt_2))
-# log_string(swap_output, "pt3: "+str(pt_3))
-# log_string(swap_output, "pt4: "+str(pt_4))
-# log_string(swap_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
-# log_string(swap_output, "pt6: "+str(pt_6))
+ #
+ log_string(xml_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
+ log_string(xml_output, "pt1: "+str(pt_1))
+ log_string(xml_output, "pt2: "+str(pt_2))
+ log_string(xml_output, "pt3: "+str(pt_3))
+ log_string(xml_output, "pt4: "+str(pt_4))
+ log_string(xml_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
+ log_string(xml_output, "pt6: "+str(pt_6))
+ log_string(xml_output, "pt7: "+str(pt_7))
 
 ## t2
  ut3acont = (1+alphaa)* pt_5 / math.exp(ra*taub_h)
@@ -96,19 +97,12 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 # else:
 #  log_string(swap_output, "A would cont. at t3")
 
- if(ut3acont > ut3astop): # ez így biztos hogy jó?
-  utility = ut3acont
- else:
-  utility = ut3astop
-
+ utility = max(ut3acont , ut3astop)
 ## t2
  ut2acont =  utility / math.exp(ra*taub_h)
  ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
 
- if(ut3bcont > ut3bstop): # ez így biztos hogy jó?
-  utility = ut3bcont
- else:
-  utility = ut3bstop
+ utility = max(ut3bcont,ut3bstop)
 
  ut2bcont = utility / math.exp(rb*taub_h)
  ut2bstop = pt_2
@@ -187,24 +181,28 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
  log_string(xml_output, "<max2>"+str(pt_2a_eq)+"</max2>")
 
  ut3bcont = ut3bstop
- # ut2bcont = ut3bcont / math.exp(rb*taub_h)
- # ut2bstop = pt_2
- # ut2bcont > ut2bstop
- if(pt_2 > ut3bcont / math.exp(rb*taub_h)):
-  log_string(xml_output, "<min_pt2_b>no_such_minimum_exists (pt_2: "+str(pt_2)+", ut3bcont: "+str(ut3bcont / math.exp(rb*taub_h))+")</min_pt2_b>")
-  pt_2b_eq = pt_2a_eq+0.01
- else:
-  pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
-  log_string(xml_output, "<min_pt2_b>"+str(pt_2b_eq)+"</min_pt2_b>")
+ # ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
+ # utility = max(ut3bcont,ut3bstop)
+ # ut2bcont = utility / math.exp(rb*taub_h)
+ pt_2b_eq = math.exp(rb*(epsilonb+taua_h)) * math.exp(rb*taub_h) / (1+alphab)
+ # # ut2bstop = pt_2
+ # # ut2bcont > ut2bstop
+ # if(pt_2 > ut3bcont / math.exp(rb*taub_h)):
+ #  log_string(xml_output, "<min_pt2_b>no_such_minimum_exists (pt_2: "+str(pt_2)+", ut3bcont: "+str(ut3bcont / math.exp(rb*taub_h))+")</min_pt2_b>")
+ #  pt_2b_eq = pt_2a_eq+0.01
+ # else:
+ #  pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
+ #  log_string(xml_output, "<min_pt2_b>"+str(pt_2b_eq)+"</min_pt2_b>")
+ # ### for debugging:
+ # #pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
 ## t1
+ #ut2acont =  ut3acont / math.exp(ra*taub_h)
+ #ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
+ pt_1a_eq = (ut3acont / math.exp(ra*taub_h)) * math.exp(ra*(taub_h+epsilonb+2*taua_h))
 
- # utility = ut2acont
- # ut1acont = utility / math.exp(ra*taua_h)
- # ut1astop = exchange_rate
- #pt_1a_eq = (ut3acont / math.exp(ra*taub_h)) * math.exp(ra*(taub_h+epsilonb+2*taua_h))
- #log_string(xml_output, "<max>"+str(pt_2a_eq)+"</max>")
+ log_string(xml_output, "<max1>"+str(pt_2a_eq)+"</max1>")
  min_rate=max(pt_7b_eq,pt_2b_eq)
- max_rate=min(pt_5a_eq,pt_2a_eq)
+ max_rate=min(pt_5a_eq,pt_2a_eq,pt_1a_eq)
  log_string(xml_output, "<max_rate>"+str(max_rate)+"</max_rate>")
  log_string(xml_output, "<min_rate>"+str(min_rate)+"</min_rate>")
  log_string(xml_output, "<max_rel_rate>"+str(max_rate/pt_0)+"</max_rel_rate>")
