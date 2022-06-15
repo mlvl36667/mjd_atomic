@@ -204,8 +204,11 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
  #log_string(xml_output, "<max>"+str(pt_2a_eq)+"</max>")
  min_rate=max(pt_7b_eq,pt_2b_eq)
  max_rate=min(pt_5a_eq,pt_2a_eq)
- log_string(xml_output, "<max>"+str(max_rate)+"</max>")
- log_string(xml_output, "<min>"+str(min_rate)+"</min>")
+ log_string(xml_output, "<max_rate>"+str(max_rate)+"</max_rate>")
+ log_string(xml_output, "<min_rate>"+str(min_rate)+"</min_rate>")
+ log_string(xml_output, "<max_rel_rate>"+str(max_rate/pt_0)+"</max_rel_rate>")
+ log_string(xml_output, "<min_rel_rate>"+str(min_rate/pt_0)+"</min_rel_rate>")
+
  if min_rate>max_rate:
      print('infeasible range:',min_rate,max_rate)
  swap_coins(rates,t_0,swap_output, min_rate+0.01, 0.01, xml_output)
