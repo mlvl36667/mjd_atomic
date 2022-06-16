@@ -13,3 +13,5 @@ rm -rf swap_output && rm -rf limits.xml && python3 run.py [NUMBER OF DATAPOINTS]
 converted input format: [UNIX TIMESTAMP],[PRICE],[INDEX 1h],[INDEX 1s]
 
 use "convert_prices.py" for this purpose
+
+then SR will be printed to "real_world_sr.pdf"
