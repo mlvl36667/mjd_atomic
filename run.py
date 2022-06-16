@@ -1,7 +1,12 @@
-#####################################################################
-#### Developed by Bence Ladoczki <ladoczki@tmit.bme.hu> 2022 Maj ####
-####               All rights reserved                           ####
-#####################################################################
+########################################################################################
+#### Developed by Bence Ladoczki <ladoczki@tmit.bme.hu> 2022 Maj #######################
+####               All rights reserved                           #######################
+########################################################################################
+# run: rm -rf swap_output && rm -rf limits.xml && python3 run.py 30000 steem_converted #
+########################################################################################
+## steem_converted format: [UNIX TIMESTAMP][PRICE][INDEX 1h][INDEX 1s]                 #
+## use convert_prices.py for this purpose                                              #
+########################################################################################
 import sys
 import numpy as np
 import json
@@ -320,19 +325,39 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  taua_h = taua / (60*60*1000)
  taub_h = taub / (60*60*1000)
 
- pt_0 = get_coin_price(t_0,rates)
- t_1 = t_0 + short_time
- pt_1 = get_coin_price(t_1,rates)
- t_2 = t_1 + taua
- pt_2 = get_coin_price(t_2,rates)
- t_3 = t_2 + taub
- pt_3 = get_coin_price(t_3,rates)
- t_4 = t_3 + epsilonb
- pt_4 = get_coin_price(t_4,rates)
- t_5 = t_3 + taub 
- pt_5 = get_coin_price(t_5,rates)
- t_6 = t_4 + taua 
- pt_6 = get_coin_price(t_6,rates)
+ pt_0 = rates[t_0][1]
+
+ t_1  = rates[t_0][3]
+ pt_1 = rates[t_1][1]
+
+ t_2 =  rates[t_1][2]
+ pt_2 = rates[t_2][1]
+
+ t_3 =  rates[t_2][2]
+ pt_3 = rates[t_3][1]
+
+ t_4 =  rates[t_3][2]
+ pt_4 = rates[t_4][1]
+
+ t_5 =  rates[t_3][2]
+ pt_5 = rates[t_5][1]
+
+ t_6 =  rates[t_4][2]
+ pt_6 = rates[t_6][1]
+
+#  pt_0 = get_coin_price(t_0,rates)
+#  t_1 = t_0 + short_time
+#  pt_1 = get_coin_price(t_1,rates)
+#  t_2 = t_1 + taua
+#  pt_2 = get_coin_price(t_2,rates)
+#  t_3 = t_2 + taub
+#  pt_3 = get_coin_price(t_3,rates)
+#  t_4 = t_3 + epsilonb
+#  pt_4 = get_coin_price(t_4,rates)
+#  t_5 = t_3 + taub
+#  pt_5 = get_coin_price(t_5,rates)
+#  t_6 = t_4 + taua
+#  pt_6 = get_coin_price(t_6,rates)
 
 # log_string(swap_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
 #
@@ -348,7 +373,7 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
  ut3astop = exchange_rate / math.exp(ra*(epsilonb+2*taua_h))
 
  ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
- ut3bstop = get_coin_price(t_3 + taub + taub,rates) / math.exp(ra*(epsilonb+2*taua_h))
+ ut3bstop = pt_6 / math.exp(ra*(epsilonb+2*taua_h))
 
  if(ut3acont < ut3astop):
 #  log_string(swap_output, "The swap fails at t3 due to A")
@@ -541,16 +566,48 @@ for i in range(15,30):
 #######################################################################
 
 rates = []
-with open('/home/e/bifi_prices') as f:
+with open(sys.argv[2]) as f:
+#with open('/home/c/bifi_prices') as f:
  for line in f:
-  x, y = line.split(",")
-  rates.append([int(x),float(y)])
+  x, y, z, q = line.split(",")
+#  rates.append([int(x),float(y),-1,-1])
+  rates.append([int(x),float(y),int(z), int(q)])
 
-price_deltas = [ -0.3, -0.2, -0.15, -0.1, -0.05, 0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4]
+# Data Transformation
+
+# counter1 = 0
+# for rate1 in rates:
+# 
+#  counter2 = 0
+#  found_1_h_delta = False
+# 
+#  found_1_s_delta = False
+#  for rate2 in rates[counter1:counter1+5000]:
+# 
+#   if(rate2[0]-rate1[0] > 60*60*1000 and not found_1_h_delta):
+#    found_1_h_delta = True
+#    rate1[2] = counter1+counter2 - 1
+#   counter2+=1
+# 
+#  counter2 = 0
+#  found_1_s_delta = False
+#  for rate2 in rates[counter1:counter1+10]:
+# 
+#   if(rate2[0]-rate1[0] > 1000 and not found_1_s_delta):
+#    found_1_s_delta = True
+#    rate1[3] = counter1+counter2 - 1
+#   counter2+=1
+#  counter1+=1
+   
+#for rate in rates:
+# log_string(swap_output,str(rate[0])+","+str(rate[1])+","+str(rate[2])+","+str(rate[3]))
+#
+#sys.exit(0)
+
+price_deltas = [ x / 1000 for x in range(-200,200,1) ]
 npprices = (np.array(price_deltas) * pt0 + np.array(price_deltas) + pt0)/2
 price_deltas_3 = npprices.tolist()
 simulated_success_rate = []
-
 iter_length = 0
 for price_delta in price_deltas:
  start_time = time.time()
@@ -562,7 +619,7 @@ for price_delta in price_deltas:
  
  for rate in rates:
   if(number_of_datapoints < max_number_of_datapoints):
-   success_or_failure = swap_coins(rates,rate[0],swap_output, rate[1] + price_delta*rate[1], price_delta, xml_output)
+   success_or_failure = swap_coins(rates,number_of_datapoints,swap_output, rate[1] + price_delta*rate[1], price_delta, xml_output)
    number_of_trials += 1
    number_of_datapoints += 1
    number_of_successes = number_of_successes + success_or_failure
