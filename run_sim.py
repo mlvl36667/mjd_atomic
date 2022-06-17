@@ -83,7 +83,7 @@ def estimate_coin_price(at, to):
     p_at=get_coin_price(at)
     if args.bs:
         # estimated by Black-Scholes formula
-        print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
+        #print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
         return p_at * math.exp((mu_hat-sigma_hat**2/2)*(to-at)/3600) # +sigma_hat*wt
     if args.mjd:
         pass
@@ -106,7 +106,7 @@ def compute_parameters(jump_criteria = 0.05, till=-1):
     log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
 
     length_of_sim = len(rates) / (60*60)
-    d_t = 1 / 3600
+    d_t = 1 #
 
     significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
     bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
