@@ -29,7 +29,7 @@ aparser.add_argument("-epsilonb", type=int, help="Paramter epsilonb", default=1)
 prediction = aparser.add_mutually_exclusive_group()
 prediction.add_argument("-bs", help="The price is estimated by Black-Scholes formula", action='store_true')
 prediction.add_argument("-mjd", help="The price is estimated by Merton Jump Diffusion Model ", action='store_true')
-aparser.add_argument("-jump_criteria", type=float, help="Parameter jump_criteria of MJD", default=0.01)
+aparser.add_argument("-jump_criteria", type=float, help="Parameter jump_criteria of MJD", default=0.1)
 args = aparser.parse_args()
 
 
@@ -83,7 +83,8 @@ def estimate_coin_price(at, to):
     p_at=get_coin_price(at)
     if args.bs:
         # estimated by Black-Scholes formula
-        return p_at * math.exp((mu_hat-sigma_hat*sigma_hat/2)*(to-at)) # +sigma_hat*wt
+        print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
+        return p_at * math.exp((mu_hat-sigma_hat**2/2)*(to-at)/3600) # +sigma_hat*wt
     if args.mjd:
         pass
 
@@ -117,6 +118,7 @@ def compute_parameters(jump_criteria = 0.05, till=-1):
     log_string(swap_output, "Significant jumps: "+str(significant_jumps)+" len: "+str(len(significant_jumps)))
     sigma_hat = np.std(bs_terms) / math.sqrt(d_t)
 
+    log_string(swap_output,str(bs_terms))
 
     mu_hat = (2*np.mean(bs_terms) + sigma_hat*sigma_hat*d_t) / ( 2 * d_t)
 
@@ -136,92 +138,6 @@ def compute_parameters(jump_criteria = 0.05, till=-1):
 #def mjd_expectation(tau, pt, lmb,  mjd_mu, mjd_sigma, gbm_mu):
 #    return pt*math.exp(gbm_mu*tau)*math.exp( lmb * tau* (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
 
-
-def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
-    global short_time, taua, taub, alphaa, alphab, ra, rb, epsilonb, swap_success
-
-    swap_success = True
-    taua_h = taua / (60*60)
-    taub_h = taub / (60*60)
-
-    pt_0 = get_coin_price(t_0)
-    t_1 = t_0 + short_time
-    pt_1 = get_coin_price_range(t_1)
-    t_2 = t_1 + taua
-    pt_2 = get_coin_price_range(t_2)
-    t_3 = t_2 + taub
-    pt_3 = get_coin_price_range(t_3)
-    t_4 = t_3 + epsilonb
-    pt_4 = get_coin_price_range(t_4)
-    t_5 = t_3 + taub
-    pt_5 = get_coin_price_range(t_5)
-    t_6 = t_4 + taua
-    pt_6 = get_coin_price_range(t_6)
-    t_7 = t_3 + taub + taub
-    pt_7 = get_coin_price_range(t_7)
-    #
-    log_string(xml_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
-    log_string(xml_output, "pt1: "+str(pt_1))
-    log_string(xml_output, "pt2: "+str(pt_2))
-    log_string(xml_output, "pt3: "+str(pt_3))
-    log_string(xml_output, "pt4: "+str(pt_4))
-    log_string(xml_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
-    log_string(xml_output, "pt6: "+str(pt_6))
-    log_string(xml_output, "pt7: "+str(pt_7))
-
-    ## t2
-    ut3acont = (1+alphaa)* pt_5 / math.exp(ra*taub_h)
-    ut3astop = exchange_rate / math.exp(ra*(epsilonb+2*taua_h))
-
-    ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
-    ut3bstop = pt_7 / math.exp(ra*(epsilonb+2*taua_h))
-
-    if(ut3acont < ut3astop):
-        #  log_string(swap_output, "The swap fails at t3 due to A")
-        log_string(xml_output, "<reason>a_aborts_at_t3:"+str(ut3acont)+"less"+str(ut3astop)+" (exchange_rate: "+str(exchange_rate)+")</reason>")
-        swap_success = False
-    # else:
-    #  log_string(swap_output, "A would cont. at t3")
-
-    utility = max(ut3acont , ut3astop)
-    ## t2
-    ut2acont =  utility / math.exp(ra*taub_h)
-    ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
-
-    utility = max(ut3bcont,ut3bstop)
-
-    ut2bcont = utility / math.exp(rb*taub_h)
-    ut2bstop = pt_2
-
-    if(ut2bcont < ut2bstop):
-        #  log_string(swap_output, "The swap fails at t2 due to B")
-        swap_success = False
-        log_string(xml_output, "<reason>b_aborts_at_t2:"+str(ut2bcont)+"less"+str(ut2bstop)+" (exchange_rate: "+str(exchange_rate)+")</reason>")
-    # else:
-    #  log_string(swap_output, "B would cont. at t2")
-    ## t1
-
-    if(ut2acont > ut2astop): # ez így biztos hogy jó?
-        utility = ut2acont
-    else:
-        utility = ut2astop
-
-    ut1acont = utility / math.exp(ra*taua_h)
-    ut1astop = exchange_rate
-
-    if(ut1acont < ut1astop):
-        #  log_string(swap_output, "The swap fails at t1 due to A")
-        swap_success = False
-        log_string(xml_output, "<reason>a_aborts_at_t1:"+str(ut1acont)+"less"+str(ut1astop)+" (exchange_rate: "+str(exchange_rate)+")</reason>")
-    # else:
-    #  log_string(swap_output, "A would cont. at t1")
-
-    if(swap_success):
-        #  log_string(swap_output, "The swap succeeds for price_delta: "+str(price_delta))
-        return 1
-    else:
-        #  log_string(swap_output, "The swap fails for price_delta: "+str(price_delta))
-        return 0
 #--------------------------------------------------------------------------------
 def swap_coins_range(rates,t_0,swap_output, xml_output):
     global short_time, taua, taub
@@ -232,6 +148,7 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
     t_3 = t_2 + taub
 
     pt_3a_eq = (1+alphaa) * estimate_coin_price(t_3, t_0)
+    print(t_3,'time:',estimate_coin_price(t_3, t_0),pt_0)
     log_string(xml_output, "<max5>"+str(pt_3a_eq)+"</max5>")
 
     pt_2b_eq = estimate_coin_price(t_2, t_0) / (1+alphaa)
@@ -331,6 +248,93 @@ def swap_coins_range_old(rates,t_0,swap_output, xml_output):
      swap_coins(rates,t_0,swap_output, min_rate+0.01, 0.01, xml_output)
      swap_coins(rates,t_0,swap_output, max_rate-0.01, 0.01, xml_output)
      return True
+
+def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
+    global short_time, taua, taub, alphaa, alphab, ra, rb, epsilonb, swap_success
+
+    swap_success = True
+    taua_h = taua / (60*60)
+    taub_h = taub / (60*60)
+
+    pt_0 = get_coin_price(t_0)
+    t_1 = t_0 + short_time
+    pt_1 = get_coin_price_range(t_1)
+    t_2 = t_1 + taua
+    pt_2 = get_coin_price_range(t_2)
+    t_3 = t_2 + taub
+    pt_3 = get_coin_price_range(t_3)
+    t_4 = t_3 + epsilonb
+    pt_4 = get_coin_price_range(t_4)
+    t_5 = t_3 + taub
+    pt_5 = get_coin_price_range(t_5)
+    t_6 = t_4 + taua
+    pt_6 = get_coin_price_range(t_6)
+    t_7 = t_3 + taub + taub
+    pt_7 = get_coin_price_range(t_7)
+    #
+    log_string(xml_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
+    log_string(xml_output, "pt1: "+str(pt_1))
+    log_string(xml_output, "pt2: "+str(pt_2))
+    log_string(xml_output, "pt3: "+str(pt_3))
+    log_string(xml_output, "pt4: "+str(pt_4))
+    log_string(xml_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
+    log_string(xml_output, "pt6: "+str(pt_6))
+    log_string(xml_output, "pt7: "+str(pt_7))
+
+    ## t2
+    ut3acont = (1+alphaa)* pt_5 / math.exp(ra*taub_h)
+    ut3astop = exchange_rate / math.exp(ra*(epsilonb+2*taua_h))
+
+    ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
+    ut3bstop = pt_7 / math.exp(ra*(epsilonb+2*taua_h))
+
+    if(ut3acont < ut3astop):
+        #  log_string(swap_output, "The swap fails at t3 due to A")
+        log_string(xml_output, "<reason>a_aborts_at_t3:"+str(ut3acont)+"less"+str(ut3astop)+" (exchange_rate: "+str(exchange_rate)+")</reason>")
+        swap_success = False
+    # else:
+    #  log_string(swap_output, "A would cont. at t3")
+
+    utility = max(ut3acont , ut3astop)
+    ## t2
+    ut2acont =  utility / math.exp(ra*taub_h)
+    ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
+
+    utility = max(ut3bcont,ut3bstop)
+
+    ut2bcont = utility / math.exp(rb*taub_h)
+    ut2bstop = pt_2
+
+    if(ut2bcont < ut2bstop):
+        #  log_string(swap_output, "The swap fails at t2 due to B")
+        swap_success = False
+        log_string(xml_output, "<reason>b_aborts_at_t2:"+str(ut2bcont)+"less"+str(ut2bstop)+" (exchange_rate: "+str(exchange_rate)+")</reason>")
+    # else:
+    #  log_string(swap_output, "B would cont. at t2")
+    ## t1
+
+    if(ut2acont > ut2astop): # ez így biztos hogy jó?
+        utility = ut2acont
+    else:
+        utility = ut2astop
+
+    ut1acont = utility / math.exp(ra*taua_h)
+    ut1astop = exchange_rate
+
+    if(ut1acont < ut1astop):
+        #  log_string(swap_output, "The swap fails at t1 due to A")
+        swap_success = False
+        log_string(xml_output, "<reason>a_aborts_at_t1:"+str(ut1acont)+"less"+str(ut1astop)+" (exchange_rate: "+str(exchange_rate)+")</reason>")
+    # else:
+    #  log_string(swap_output, "A would cont. at t1")
+
+    if(swap_success):
+        #  log_string(swap_output, "The swap succeeds for price_delta: "+str(price_delta))
+        return 1
+    else:
+        #  log_string(swap_output, "The swap fails for price_delta: "+str(price_delta))
+        return 0
+
 ############################################
 ####### Entry point to the script ##########
 ############################################
@@ -345,7 +349,7 @@ log_string(xml_output, '<?xml version="1.0" encoding="UTF-8"?>')
 log_string(xml_output, '<simulation>')
 for arg in vars(args):
     log_string(xml_output, '<'+arg+'>'+str(getattr(args, arg))+'</'+arg+'>')
-swap_output = open("swap_output", "a")
+swap_output = open("swap_output.txt", "w")
 compute_parameters(args.jump_criteria,-1)
 log_string(swap_output, "------------------------")
 log_string(swap_output, "Launching the atomic swap simulator at "+str(datetime.datetime.now()))
