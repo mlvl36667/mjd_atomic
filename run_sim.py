@@ -25,6 +25,8 @@ aparser.add_argument("-alphaa", type=float, help="Parameter alpha_a", default=0.
 aparser.add_argument("-alphab", type=float, help="Parameter alpha_b", default=0.1)
 aparser.add_argument("-ra", type=float, help="Parameter r_a", default=0.01)
 aparser.add_argument("-rb", type=float, help="Parameter r_b", default=0.01)
+aparser.add_argument("-price_file", type=str, help="The file with exchange rates. Each line corresponds to a second", default='bifi_price_list')
+aparser.add_argument("-xml_outfile", type=str, help="The xml file where the results are stored", default='limits.xml')
 aparser.add_argument("-epsilonb", type=int, help="Paramter epsilonb", default=1)
 prediction = aparser.add_mutually_exclusive_group()
 prediction.add_argument("-bs", help="The price is estimated by Black-Scholes formula", action='store_true')
@@ -80,13 +82,15 @@ def estimate_coin_price(at, to):
     :param to: The time point of to estimate the time
     :return: The estimated price"""
     global args, sigma_hat, mu_hat, sigma_jhat, mu_jhat
-    p_at=get_coin_price(at)
+    p_at=get_coin_price_range(at)
     if args.bs:
         # estimated by Black-Scholes formula
         #print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
         return p_at * math.exp((mu_hat-sigma_hat**2/2)*(to-at)/3600) # +sigma_hat*wt
     if args.mjd:
         pass
+    print('Please, define the price estimation function, e.g. -bs')
+    sys.exit(0)
 
 length_of_sim=0
 sigma_hat=0
@@ -340,11 +344,11 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 ############################################
 
 rates = []
-with open('bifi_price_list') as f:
+with open(args.price_file) as f:
  for line in f:
   rates.append(float(line))
 
-xml_output = open("limits.xml", "w") # used to be "a"
+xml_output = open(args.xml_outfile, "w") # used to be "a"
 log_string(xml_output, '<?xml version="1.0" encoding="UTF-8"?>')
 log_string(xml_output, '<simulation>')
 for arg in vars(args):
