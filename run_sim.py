@@ -23,6 +23,8 @@ aparser.add_argument("-taua", type=float, help="Parameter tau_a in [hour]", defa
 aparser.add_argument("-taub", type=float, help="Parameter tau_b in [hour]", default=1)
 aparser.add_argument("-alphaa", type=float, help="Parameter alpha_a", default=0.1)
 aparser.add_argument("-alphab", type=float, help="Parameter alpha_b", default=0.1)
+aparser.add_argument("-betaA", type=float, help="Parameter beta_A", default=0.1)
+aparser.add_argument("-betaB", type=float, help="Parameter beta_B", default=0.1)
 aparser.add_argument("-ra", type=float, help="Parameter r_a", default=0.01)
 aparser.add_argument("-rb", type=float, help="Parameter r_b", default=0.01)
 aparser.add_argument("-price_file", type=str, help="The file with exchange rates. Each line corresponds to a second", default='bifi_price_list')
@@ -32,6 +34,8 @@ prediction = aparser.add_mutually_exclusive_group()
 prediction.add_argument("-bs", help="The price is estimated by Black-Scholes formula", action='store_true')
 prediction.add_argument("-mjd", help="The price is estimated by Merton Jump Diffusion Model ", action='store_true')
 aparser.add_argument("-jump_criteria", type=float, help="Parameter jump_criteria of MJD", default=0.1)
+aparser.add_argument("-fig_rate", help="Print data for a chart of the rate prediction algorithm", action='store_true')
+
 args = aparser.parse_args()
 
 
@@ -86,7 +90,7 @@ def estimate_coin_price(at, to):
     if args.bs:
         # estimated by Black-Scholes formula
         #print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
-        return p_at * math.exp((mu_hat)*(to-at)/3600) 
+        return p_at * math.exp((-mu_hat)*(to-at)/360)
     if args.mjd:
         pass
     print('Please, define the price estimation function, e.g. -bs')
@@ -144,7 +148,7 @@ def compute_parameters(jump_criteria = 0.05, till=-1):
 
 #--------------------------------------------------------------------------------
 def swap_coins_range(rates,t_0,swap_output, xml_output):
-    global short_time, taua, taub
+    global short_time, taua, taub, args
 
     pt_0= get_coin_price(t_0)
     t_1 = t_0 + short_time
@@ -160,11 +164,23 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
 
     min_rate=pt_2b_eq #max(pt_2b_eq)
     max_rate=pt_3a_eq #min(pt_3a_eq)
+
+    # printing an illustrative figure
+    if args.fig_rate:
+        log_string(xml_output, "<t0>"+str(t_0)+"</t0>")
+        for t, rate in enumerate(rates[t_0:t_3+taub]):
+            if t % 10 == 0:
+                log_string(xml_output, "<data><time>"+str(t)+"</time><rel_rate>"+str(rate)+"</rel_rate><est_rate>"+str(estimate_coin_price(t_0, t))+"</est_rate></data>")
+        log_string(xml_output, "</datapoint></simulation>")
+        sys.exit(0)
+
     log_string(xml_output, "<max_rate>"+str(max_rate)+"</max_rate>")
     log_string(xml_output, "<min_rate>"+str(min_rate)+"</min_rate>")
     log_string(xml_output, "<max_rel_rate>"+str(max_rate/pt_0)+"</max_rel_rate>")
     log_string(xml_output, "<min_rel_rate>"+str(min_rate/pt_0)+"</min_rel_rate>")
-
+    log_string(xml_output, "<beta>"+str((max_rate-min_rate)/pt_0)+"</beta>")
+    log_string(xml_output, "<opt_rel_rate>"+str(((max_rate+min_rate)/2-pt_0)/pt_0)+"</opt_rel_rate>")
+    log_string(xml_output, "<rel_rate>"+str((max(max_rate-pt_0,pt_0-min_rate))/pt_0)+"</rel_rate>")
     if min_rate>max_rate:
      print('infeasible range:',min_rate,max_rate)
      return False
