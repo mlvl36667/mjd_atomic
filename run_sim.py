@@ -86,7 +86,7 @@ def estimate_coin_price(at, to):
     if args.bs:
         # estimated by Black-Scholes formula
         #print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
-        return p_at * math.exp((mu_hat-sigma_hat**2/2)*(to-at)/3600) # +sigma_hat*wt
+        return p_at * math.exp((mu_hat)*(to-at)/3600) 
     if args.mjd:
         pass
     print('Please, define the price estimation function, e.g. -bs')
