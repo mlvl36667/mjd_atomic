@@ -464,7 +464,7 @@ log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
 
 length_of_sim = (rates[-1][0]-rates[0][0]) / (60*60)
 d_t = 1 / len(rates1)
-
+print('d_t=',d_t)
 jump_criteria = 0.005
 #jump_criteria = 0.01
 

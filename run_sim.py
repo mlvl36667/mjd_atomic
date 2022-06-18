@@ -19,26 +19,25 @@ aparser = argparse.ArgumentParser()
 aparser.add_argument("-fig", help="The output is a figure", action='store_true')
 aparser.add_argument("-short_time", type=int, help="Parameter t_0 in [sec]", default=1)
 aparser.add_argument("-price_avg", type=int, help="Use averaging of prices", default=1)
-aparser.add_argument("-taua", type=float, help="Parameter tau_a in [hour]", default=1)
-aparser.add_argument("-taub", type=float, help="Parameter tau_b in [hour]", default=1)
-aparser.add_argument("-alphaa", type=float, help="Parameter alpha_a", default=0.1)
-aparser.add_argument("-alphab", type=float, help="Parameter alpha_b", default=0.1)
+aparser.add_argument("-parse_till", type=int, help="Parse the rate time series till", default=-1)
+aparser.add_argument("-tau1", type=float, help="Parameter tau_1 in [hour]", default=1)
+aparser.add_argument("-tau2", type=float, help="Parameter tau_2 in [hour]", default=1)
+aparser.add_argument("-alpha1", type=float, help="Parameter alpha_1", default=0.1)
+aparser.add_argument("-alpha2", type=float, help="Parameter alpha_2", default=0.1)
 aparser.add_argument("-betaA", type=float, help="Parameter beta_A", default=0.1)
 aparser.add_argument("-betaB", type=float, help="Parameter beta_B", default=0.1)
 aparser.add_argument("-ra", type=float, help="Parameter r_a", default=0.01)
 aparser.add_argument("-rb", type=float, help="Parameter r_b", default=0.01)
 aparser.add_argument("-price_file", type=str, help="The file with exchange rates. Each line corresponds to a second", default='bifi_price_list')
 aparser.add_argument("-xml_outfile", type=str, help="The xml file where the results are stored", default='limits.xml')
-aparser.add_argument("-epsilonb", type=int, help="Paramter epsilonb", default=1)
+aparser.add_argument("-epsilon2", type=int, help="Paramter epsilon_2", default=1)
 prediction = aparser.add_mutually_exclusive_group()
-prediction.add_argument("-bs", help="The price is estimated by Black-Scholes formula", action='store_true')
+prediction.add_argument("-bs", help="The price is estimated by Black-Scholes formula (default)", action='store_true')
 prediction.add_argument("-mjd", help="The price is estimated by Merton Jump Diffusion Model ", action='store_true')
 aparser.add_argument("-jump_criteria", type=float, help="Parameter jump_criteria of MJD", default=0.1)
 aparser.add_argument("-fig_rate", help="Print data for a chart of the rate prediction algorithm", action='store_true')
 
 args = aparser.parse_args()
-
-
 
 matplotlib.use("pgf")
 matplotlib.rcParams.update({
@@ -49,13 +48,13 @@ matplotlib.rcParams.update({
 })
 
 short_time = args.short_time # in s
-taua = args.taua*60*60 # in s
-taub = args.taub*60*60 # in s
-alphaa = args.alphaa
-alphab = args.alphab
+tau1 = args.tau1*60*60 # in s
+tau2 = args.tau2*60*60 # in s
+alpha1 = args.alpha1
+alpha2 = args.alpha2
 ra = args.ra
 rb = args.rb
-epsilonb = args.epsilonb
+epsilon2 = args.epsilon2
 price_average=args.price_avg
 
 def log_string(file_descriptor,string):
@@ -85,24 +84,29 @@ def estimate_coin_price(at, to):
     :param at: The time point when the estimation is done
     :param to: The time point of to estimate the time
     :return: The estimated price"""
-    global args, sigma_hat, mu_hat, sigma_jhat, mu_jhat
+    global args, sigma_hat, mu_hat, sigma_jhat, mu_jhat, intensity
     p_at=get_coin_price_range(at)
-    if args.bs:
-        # estimated by Black-Scholes formula
-        #print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
-        return p_at * math.exp((-mu_hat)*(to-at)/360)
     if args.mjd:
-        pass
-    print('Please, define the price estimation function, e.g. -bs')
-    sys.exit(0)
+        # estimated by Merton Jump Diffusion Model (MJD) formula
+        #R_t e^{\mu (t'-t)} e^{\lambda \tau ( e^{\mu_j + \frac{\sigma^2_j}{2}} - 1 ) }
+        mjd_mu = mu_jhat
+        mjd_sigma = sigma_jhat
+        mjd_lambda = intensity
+        return p_at * math.exp(mu_hat*(to-at)/3600)*math.exp( mjd_lambda  * (to-at)/3600 * (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
+    #if args.bs:
+    # estimated by Black-Scholes formula
+    #print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
+    # R_t e^{\mu(t'-t)}
+    return p_at * math.exp((mu_hat)*(to-at)/3600)
 
+# global parameters:
 length_of_sim=0
 sigma_hat=0
 mu_hat=0
 sigma_jhat=0
-
+intensity=0
 def compute_parameters(jump_criteria = 0.05, till=-1):
-    global rates, length_of_sim, sigma_hat, mu_hat, sigma_jhat, mu_jhat
+    global args, rates, length_of_sim, sigma_hat, mu_hat, sigma_jhat, mu_jhat
     if till==-1:
         diff = np.diff(rates)
     else:
@@ -114,7 +118,30 @@ def compute_parameters(jump_criteria = 0.05, till=-1):
     log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
 
     length_of_sim = len(rates) / (60*60)
+
     d_t = 1 #
+
+    if args.bs:
+        #######################################################
+        ### Calculate Parameters For Black-Scholes         ####
+        #######################################################
+
+        d_t = 1 / len(rates)
+        print('d_t=',d_t)
+        jump_criteria = 10000
+
+        bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
+
+        sigma_hat = np.std(bs_terms) / math.sqrt(d_t)
+
+        log_string(swap_output, "np.mean: "+str(np.mean(bs_terms)))
+        log_string(swap_output, "-------------------")
+
+        mu_hat = (np.mean(bs_terms)/d_t + (sigma_hat*sigma_hat) / 2 * d_t )
+
+        log_string(swap_output, "sigma_hat_gbm: "+str(sigma_hat))
+        log_string(swap_output, "mu_hat_gbm: "+str(mu_hat))
+        return
 
     significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
     bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
@@ -148,18 +175,18 @@ def compute_parameters(jump_criteria = 0.05, till=-1):
 
 #--------------------------------------------------------------------------------
 def swap_coins_range(rates,t_0,swap_output, xml_output):
-    global short_time, taua, taub, args
+    global short_time, tau1, tau2, args
 
     pt_0= get_coin_price(t_0)
     t_1 = t_0 + short_time
-    t_2 = t_1 + taua
-    t_3 = t_2 + taub
+    t_2 = t_1 + tau1
+    t_3 = t_2 + tau2
 
-    pt_3a_eq = (1+alphaa) * estimate_coin_price(t_3, t_0)
+    pt_3a_eq = (1+alpha1) * estimate_coin_price(t_3, t_0)
     print(t_3,'time:',estimate_coin_price(t_3, t_0),pt_0)
     log_string(xml_output, "<max5>"+str(pt_3a_eq)+"</max5>")
 
-    pt_2b_eq = estimate_coin_price(t_2, t_0) / (1+alphaa)
+    pt_2b_eq = estimate_coin_price(t_2, t_0) / (1+alpha1)
     log_string(xml_output, "<min7>"+str(pt_2b_eq)+"</min7>")
 
     min_rate=pt_2b_eq #max(pt_2b_eq)
@@ -168,7 +195,7 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
     # printing an illustrative figure
     if args.fig_rate:
         log_string(xml_output, "<t0>"+str(t_0)+"</t0>")
-        for t, rate in enumerate(rates[t_0:t_3+taub]):
+        for t, rate in enumerate(rates[t_0:max(args.parse_till,t_3+tau2)]):
             if t % 10 == 0:
                 log_string(xml_output, "<data><time>"+str(t)+"</time><rel_rate>"+str(rate)+"</rel_rate><est_rate>"+str(estimate_coin_price(t_0, t))+"</est_rate></data>")
         log_string(xml_output, "</datapoint></simulation>")
@@ -190,68 +217,68 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
      return True
 
 def swap_coins_range_old(rates,t_0,swap_output, xml_output):
-    global short_time, taua, taub, alphaa, alphab, ra, rb, epsilonb, swap_success
+    global short_time, tau1, tau2, alpha1, alpha2, ra, rb, epsilon2, swap_success
 
-    taua_h = taua / (60*60)
-    taub_h = taub / (60*60)
+    tau1_h = tau1 / (60*60)
+    tau2_h = tau2 / (60*60)
 
     pt_0 = get_coin_price(t_0)
     t_1 = t_0 + short_time
     pt_1 = get_coin_price_range(t_1)
-    t_2 = t_1 + taua
+    t_2 = t_1 + tau1
     pt_2 = get_coin_price_range(t_2)
-    t_3 = t_2 + taub
+    t_3 = t_2 + tau2
     pt_3 = get_coin_price_range(t_3)
-    t_4 = t_3 + epsilonb
+    t_4 = t_3 + epsilon2
     pt_4 = get_coin_price_range(t_4)
-    t_5 = t_3 + taub
+    t_5 = t_3 + tau2
     pt_5 = get_coin_price_range(t_5)
-    t_6 = t_4 + taua
+    t_6 = t_4 + tau1
     pt_6 = get_coin_price_range(t_6)
-    t_7 = t_3 + taub + taub
+    t_7 = t_3 + tau2 + tau2
     pt_7 = get_coin_price_range(t_7)
 
     ## t2
-    #ut3acont = (1+alphaa)* pt_5 / math.exp(ra*taub_h)
-    #ut3astop = exchange_rate / math.exp(ra*(epsilonb+2*taua_h))
+    #ut3acont = (1+alpha1)* pt_5 / math.exp(ra*tau2_h)
+    #ut3astop = exchange_rate / math.exp(ra*(epsilon2+2*tau1_h))
     # ut3acont==ut3astop mennyi az exchange_rate
-    #pt_5a_eq = ((1+alphaa)* pt_5 / math.exp(ra*taub_h)) * math.exp(ra*(epsilonb+2*taua_h))
-    pt_3a_eq = ((1+alphaa)* pt_3 / math.exp(ra*taub_h)) * math.exp(ra*(epsilonb+2*taua_h))
+    #pt_5a_eq = ((1+alpha1)* pt_5 / math.exp(ra*tau2_h)) * math.exp(ra*(epsilon2+2*tau1_h))
+    pt_3a_eq = ((1+alpha1)* pt_3 / math.exp(ra*tau2_h)) * math.exp(ra*(epsilon2+2*tau1_h))
     log_string(xml_output, "<max5>"+str(pt_3a_eq)+"</max5>")
 
 
-    # ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
-    ut3bstop = pt_7 / math.exp(ra*(epsilonb+2*taua_h))
+    # ut3bcont = (1+alpha2) * exchange_rate / math.exp(rb*(epsilon2+tau1_h))
+    ut3bstop = pt_7 / math.exp(ra*(epsilon2+2*tau1_h))
     # ut3bcont==ut3bstop mennyi az exchange_rate
-    pt_7b_eq = (pt_7 / math.exp(ra*(epsilonb+2*taua_h))) * math.exp(rb*(epsilonb+taua_h)) / (1+alphab)
+    pt_7b_eq = (pt_7 / math.exp(ra*(epsilon2+2*tau1_h))) * math.exp(rb*(epsilon2+tau1_h)) / (1+alpha2)
     log_string(xml_output, "<min7>"+str(pt_7b_eq)+"</min7>")
 
     # utility = ut3acont
-    # ut2acont =  utility / math.exp(ra*taub_h)
-    # ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
+    # ut2acont =  utility / math.exp(ra*tau2_h)
+    # ut2astop = exchange_rate / math.exp(ra*(tau2_h+epsilon2+2*tau1_h))
     # ut2acont==ut2astop mennyi az exchange_rate
-    pt_2a_eq = (ut3acont / math.exp(ra*taub_h)) * math.exp(ra*(taub_h+epsilonb+2*taua_h))
+    pt_2a_eq = (ut3acont / math.exp(ra*tau2_h)) * math.exp(ra*(tau2_h+epsilon2+2*tau1_h))
     log_string(xml_output, "<max2>"+str(pt_2a_eq)+"</max2>")
 
     ut3bcont = ut3bstop
-    # ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
+    # ut3bcont = (1+alpha2) * exchange_rate / math.exp(rb*(epsilon2+tau1_h))
     # utility = max(ut3bcont,ut3bstop)
-    # ut2bcont = utility / math.exp(rb*taub_h)
-    pt_2b_eq = math.exp(rb*(epsilonb+taua_h)) * math.exp(rb*taub_h) / (1+alphab)
+    # ut2bcont = utility / math.exp(rb*tau2_h)
+    pt_2b_eq = math.exp(rb*(epsilon2+tau1_h)) * math.exp(rb*tau2_h) / (1+alpha2)
     # # ut2bstop = pt_2
     # # ut2bcont > ut2bstop
-    # if(pt_2 > ut3bcont / math.exp(rb*taub_h)):
-    #  log_string(xml_output, "<min_pt2_b>no_such_minimum_exists (pt_2: "+str(pt_2)+", ut3bcont: "+str(ut3bcont / math.exp(rb*taub_h))+")</min_pt2_b>")
+    # if(pt_2 > ut3bcont / math.exp(rb*tau2_h)):
+    #  log_string(xml_output, "<min_pt2_b>no_such_minimum_exists (pt_2: "+str(pt_2)+", ut3bcont: "+str(ut3bcont / math.exp(rb*tau2_h))+")</min_pt2_b>")
     #  pt_2b_eq = pt_2a_eq+0.01
     # else:
-    #  pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
+    #  pt_2b_eq = ut3bstop * math.exp(rb*tau2_h)
     #  log_string(xml_output, "<min_pt2_b>"+str(pt_2b_eq)+"</min_pt2_b>")
     # ### for debugging:
-    # #pt_2b_eq = ut3bstop * math.exp(rb*taub_h)
+    # #pt_2b_eq = ut3bstop * math.exp(rb*tau2_h)
     ## t1
-    #ut2acont =  ut3acont / math.exp(ra*taub_h)
-    #ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
-    pt_1a_eq = (ut3acont / math.exp(ra*taub_h)) * math.exp(ra*(taub_h+epsilonb+2*taua_h))
+    #ut2acont =  ut3acont / math.exp(ra*tau2_h)
+    #ut2astop = exchange_rate / math.exp(ra*(tau2_h+epsilon2+2*tau1_h))
+    pt_1a_eq = (ut3acont / math.exp(ra*tau2_h)) * math.exp(ra*(tau2_h+epsilon2+2*tau1_h))
 
     log_string(xml_output, "<max1>"+str(pt_2a_eq)+"</max1>")
     min_rate=max(pt_7b_eq,pt_2b_eq)
@@ -270,43 +297,43 @@ def swap_coins_range_old(rates,t_0,swap_output, xml_output):
      return True
 
 def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
-    global short_time, taua, taub, alphaa, alphab, ra, rb, epsilonb, swap_success
+    global short_time, tau1, tau2, alpha1, alpha2, ra, rb, epsilon2, swap_success
 
     swap_success = True
-    taua_h = taua / (60*60)
-    taub_h = taub / (60*60)
+    tau1_h = tau1 / (60*60)
+    tau2_h = tau2 / (60*60)
 
     pt_0 = get_coin_price(t_0)
     t_1 = t_0 + short_time
     pt_1 = get_coin_price_range(t_1)
-    t_2 = t_1 + taua
+    t_2 = t_1 + tau1
     pt_2 = get_coin_price_range(t_2)
-    t_3 = t_2 + taub
+    t_3 = t_2 + tau2
     pt_3 = get_coin_price_range(t_3)
-    t_4 = t_3 + epsilonb
+    t_4 = t_3 + epsilon2
     pt_4 = get_coin_price_range(t_4)
-    t_5 = t_3 + taub
+    t_5 = t_3 + tau2
     pt_5 = get_coin_price_range(t_5)
-    t_6 = t_4 + taua
+    t_6 = t_4 + tau1
     pt_6 = get_coin_price_range(t_6)
-    t_7 = t_3 + taub + taub
+    t_7 = t_3 + tau2 + tau2
     pt_7 = get_coin_price_range(t_7)
     #
-    log_string(xml_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
-    log_string(xml_output, "pt1: "+str(pt_1))
-    log_string(xml_output, "pt2: "+str(pt_2))
-    log_string(xml_output, "pt3: "+str(pt_3))
-    log_string(xml_output, "pt4: "+str(pt_4))
-    log_string(xml_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
-    log_string(xml_output, "pt6: "+str(pt_6))
-    log_string(xml_output, "pt7: "+str(pt_7))
+    # log_string(xml_output, "pt0: "+str(pt_1)+" t0: "+str(t_0))
+    # log_string(xml_output, "pt1: "+str(pt_1))
+    # log_string(xml_output, "pt2: "+str(pt_2))
+    # log_string(xml_output, "pt3: "+str(pt_3))
+    # log_string(xml_output, "pt4: "+str(pt_4))
+    # log_string(xml_output, "pt5: "+str(pt_5)+" t5: "+str(t_5))
+    # log_string(xml_output, "pt6: "+str(pt_6))
+    # log_string(xml_output, "pt7: "+str(pt_7))
 
     ## t2
-    ut3acont = (1+alphaa)* pt_5 / math.exp(ra*taub_h)
-    ut3astop = exchange_rate / math.exp(ra*(epsilonb+2*taua_h))
+    ut3acont = (1+alpha1)* pt_5 / math.exp(ra*tau2_h)
+    ut3astop = exchange_rate / math.exp(ra*(epsilon2+2*tau1_h))
 
-    ut3bcont = (1+alphab) * exchange_rate / math.exp(rb*(epsilonb+taua_h))
-    ut3bstop = pt_7 / math.exp(ra*(epsilonb+2*taua_h))
+    ut3bcont = (1+alpha2) * exchange_rate / math.exp(rb*(epsilon2+tau1_h))
+    ut3bstop = pt_7 / math.exp(ra*(epsilon2+2*tau1_h))
 
     if(ut3acont < ut3astop):
         #  log_string(swap_output, "The swap fails at t3 due to A")
@@ -317,12 +344,12 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 
     utility = max(ut3acont , ut3astop)
     ## t2
-    ut2acont =  utility / math.exp(ra*taub_h)
-    ut2astop = exchange_rate / math.exp(ra*(taub_h+epsilonb+2*taua_h))
+    ut2acont =  utility / math.exp(ra*tau2_h)
+    ut2astop = exchange_rate / math.exp(ra*(tau2_h+epsilon2+2*tau1_h))
 
     utility = max(ut3bcont,ut3bstop)
 
-    ut2bcont = utility / math.exp(rb*taub_h)
+    ut2bcont = utility / math.exp(rb*tau2_h)
     ut2bstop = pt_2
 
     if(ut2bcont < ut2bstop):
@@ -338,7 +365,7 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
     else:
         utility = ut2astop
 
-    ut1acont = utility / math.exp(ra*taua_h)
+    ut1acont = utility / math.exp(ra*tau1_h)
     ut1astop = exchange_rate
 
     if(ut1acont < ut1astop):
@@ -361,14 +388,20 @@ def swap_coins(rates,t_0,swap_output, exchange_rate, price_delta, xml_output):
 
 rates = []
 with open(args.price_file) as f:
- for line in f:
+ for count,line in enumerate(f):
   rates.append(float(line))
+  if count==args.parse_till:
+      break
 
 xml_output = open(args.xml_outfile, "w") # used to be "a"
 log_string(xml_output, '<?xml version="1.0" encoding="UTF-8"?>')
 log_string(xml_output, '<simulation>')
 for arg in vars(args):
     log_string(xml_output, '<'+arg+'>'+str(getattr(args, arg))+'</'+arg+'>')
+if args.mjd:
+    log_string(xml_output, '<predict_method>MJD</predict_method>')
+else:
+    log_string(xml_output, '<predict_method>BS</predict_method>')
 swap_output = open("swap_output.txt", "w")
 compute_parameters(args.jump_criteria,-1)
 log_string(swap_output, "------------------------")
