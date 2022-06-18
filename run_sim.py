@@ -84,15 +84,15 @@ def estimate_coin_price(at, to):
     :param at: The time point when the estimation is done
     :param to: The time point of to estimate the time
     :return: The estimated price"""
-    global args, sigma_hat, mu_hat, sigma_jhat, mu_jhat, intensity
+    global args, sigma_hat, mu_hat, sigma_jhat, mu_jhat, lambda_hat
     p_at=get_coin_price_range(at)
     if args.mjd:
         # estimated by Merton Jump Diffusion Model (MJD) formula
         #R_t e^{\mu (t'-t)} e^{\lambda \tau ( e^{\mu_j + \frac{\sigma^2_j}{2}} - 1 ) }
         mjd_mu = mu_jhat
         mjd_sigma = sigma_jhat
-        mjd_lambda = intensity
-        return p_at * math.exp(mu_hat*(to-at)/3600)*math.exp( mjd_lambda  * (to-at)/3600 * (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
+        mjd_lambda = lambda_hat
+        return p_at * math.exp(mu_hat*(to-at)/3600)*math.exp( mjd_lambda  * ((to-at)/3600) * (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
     #if args.bs:
     # estimated by Black-Scholes formula
     #print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
@@ -104,72 +104,76 @@ length_of_sim=0
 sigma_hat=0
 mu_hat=0
 sigma_jhat=0
-intensity=0
+lambda_hat=0
 def compute_parameters(jump_criteria = 0.05, till=-1):
     global args, rates, length_of_sim, sigma_hat, mu_hat, sigma_jhat, mu_jhat
+    log_rates=[math.log(x) for x in rates]
     if till==-1:
-        diff = np.diff(rates)
+        diff = np.diff(log_rates)
     else:
-        diff = np.diff(rates[max(a,till-1000):till])
+        diff = np.diff(log_rates[max(a,till-1000):till])
 
     diff_list = diff.tolist()
 
-    log_string(swap_output, "Maximum of jumps: "+str(np.max(diff)))
-    log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
 
-    length_of_sim = len(rates) / (60*60)
+    if args.mjd:
+        max_jump=np.max(diff)
+        log_string(swap_output, "Maximum of jumps: "+str(max_jump))
+        log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
+        jump_criteria=min(max_jump-0.00001,jump_criteria)
+        length_of_sim = len(rates) / (60*60)
 
-    d_t = 1 #
+        d_t = 1 /3600
 
-    if args.bs:
+        significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
+        bs_terms = [x for x in diff_list if abs(x) < jump_criteria ] # and abs(x) > 0.000001
+
+        lambda_hat = len(significant_jumps) / length_of_sim
+        log_string(swap_output, "lambda_hat: "+str(lambda_hat))
+        log_string(swap_output, "Lenth of sim: "+str(length_of_sim))
+
+        log_string(swap_output, "Significant jumps: "+str(significant_jumps)+" len: "+str(len(significant_jumps)))
+        sigma_hat = np.std(bs_terms) / math.sqrt(d_t)
+
+        log_string(swap_output,str(bs_terms))
+
+        mu_hat = (2*np.mean(bs_terms) + sigma_hat*sigma_hat*d_t) / ( 2 * d_t)
+
+        log_string(swap_output, "var_sign: "+str(np.var(significant_jumps)))
+
+        sigma_jhat = math.sqrt(np.var(significant_jumps) - sigma_hat*sigma_hat * d_t)
+
+        mu_jhat = np.mean(significant_jumps) - ( mu_hat - sigma_hat*sigma_hat / 2) * d_t
+
+        log_string(swap_output, "-------------------")
+        log_string(swap_output, "mu_hat: "+str(mu_hat)+" (s)")
+        log_string(swap_output, "sigma_hat: "+str(sigma_hat)+" (sqrt(s))")
+        log_string(swap_output, "mu_jhat: "+str(mu_jhat)+" (s)")
+        log_string(swap_output, "sigma_jhat: "+str(sigma_jhat)+" (s)")
+        log_string(swap_output, "-------------------")
+        print('sigma_hat:',sigma_hat,'mu_hat:',mu_hat,'sigma_jhat',sigma_jhat,'mu_jhat:',mu_jhat,'lambda_hat',lambda_hat)
+        return
+    # the default is bs model
+    if args.bs or True:
         #######################################################
         ### Calculate Parameters For Black-Scholes         ####
         #######################################################
 
-        d_t = 1 / len(rates)
-        print('d_t=',d_t)
-        jump_criteria = 10000
+        mean_rate=np.mean(rates)
+        std_rate=np.std(rates)
 
-        bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
+        d_t = 1 /3600
+        #print('d_t=',d_t)
 
-        sigma_hat = np.std(bs_terms) / math.sqrt(d_t)
+        variance_diff= np.std(diff)
+        sigma_hat = math.sqrt(variance_diff / d_t)
+        mu_hat =  np.mean(diff_list)/d_t +  variance_diff / 2 * d_t
 
-        log_string(swap_output, "np.mean: "+str(np.mean(bs_terms)))
         log_string(swap_output, "-------------------")
-
-        mu_hat = (np.mean(bs_terms)/d_t + (sigma_hat*sigma_hat) / 2 * d_t )
-
         log_string(swap_output, "sigma_hat_gbm: "+str(sigma_hat))
         log_string(swap_output, "mu_hat_gbm: "+str(mu_hat))
+        print('sigma_hat:',sigma_hat,'mu_hat:',mu_hat)
         return
-
-    significant_jumps = [x for x in diff_list if abs(x) > jump_criteria]
-    bs_terms = [x for x in diff_list if abs(x) < jump_criteria and abs(x) > 0.000001]
-
-    intensity = len(significant_jumps) / length_of_sim
-    log_string(swap_output, "Intensity: "+str(intensity))
-    log_string(swap_output, "Lenth of sim: "+str(length_of_sim))
-
-    log_string(swap_output, "Significant jumps: "+str(significant_jumps)+" len: "+str(len(significant_jumps)))
-    sigma_hat = np.std(bs_terms) / math.sqrt(d_t)
-
-    log_string(swap_output,str(bs_terms))
-
-    mu_hat = (2*np.mean(bs_terms) + sigma_hat*sigma_hat*d_t) / ( 2 * d_t)
-
-    log_string(swap_output, "var_sign: "+str(np.var(significant_jumps)))
-
-    sigma_jhat = math.sqrt(np.var(significant_jumps) - sigma_hat*sigma_hat * d_t)
-
-    mu_jhat = np.mean(significant_jumps) - ( mu_hat - sigma_hat*sigma_hat / 2) * d_t
-
-    log_string(swap_output, "-------------------")
-    log_string(swap_output, "mu_hat: "+str(mu_hat)+" (s)")
-    log_string(swap_output, "sigma_hat: "+str(sigma_hat)+" (sqrt(s))")
-    log_string(swap_output, "mu_jhat: "+str(mu_jhat)+" (s)")
-    log_string(swap_output, "sigma_jhat: "+str(sigma_jhat)+" (s)")
-    log_string(swap_output, "-------------------")
-
 #def mjd_expectation(tau, pt, lmb,  mjd_mu, mjd_sigma, gbm_mu):
 #    return pt*math.exp(gbm_mu*tau)*math.exp( lmb * tau* (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
 
@@ -197,7 +201,7 @@ def swap_coins_range(rates,t_0,swap_output, xml_output):
         log_string(xml_output, "<t0>"+str(t_0)+"</t0>")
         for t, rate in enumerate(rates[t_0:max(args.parse_till,t_3+tau2)]):
             if t % 10 == 0:
-                log_string(xml_output, "<data><time>"+str(t)+"</time><rel_rate>"+str(rate)+"</rel_rate><est_rate>"+str(estimate_coin_price(t_0, t))+"</est_rate></data>")
+                log_string(xml_output, "<data><time>"+str(t)+"</time><rel_rate>"+str(rate)+"</rel_rate><est_rate>"+str(estimate_coin_price(t_0, t_0+t))+"</est_rate></data>")
         log_string(xml_output, "</datapoint></simulation>")
         sys.exit(0)
 
