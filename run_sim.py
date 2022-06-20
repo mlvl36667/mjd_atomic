@@ -33,7 +33,8 @@ aparser.add_argument("-xml_outfile", type=str, help="The xml file where the resu
 aparser.add_argument("-epsilon2", type=int, help="Paramter epsilon_2", default=1)
 prediction = aparser.add_mutually_exclusive_group()
 prediction.add_argument("-bs", help="The price is estimated by Black-Scholes formula (default)", action='store_true')
-prediction.add_argument("-mjd", help="The price is estimated by Merton Jump Diffusion Model ", action='store_true')
+prediction.add_argument("-mjd", help="The price is estimated by Merton Jump Diffusion Model Eq (11)", action='store_true')
+prediction.add_argument("-mjd_new", help="The price is estimated by Merton Jump Diffusion Model Eq (10)", action='store_true')
 aparser.add_argument("-jump_criteria", type=float, help="Parameter jump_criteria of MJD", default=0.1)
 aparser.add_argument("-fig_rate", help="Print data for a chart of the rate prediction algorithm", action='store_true')
 
@@ -90,11 +91,12 @@ def estimate_coin_price(at, to):
     if args.mjd:
         # estimated by Merton Jump Diffusion Model (MJD) formula
         return p_at * math.exp( (mu_hat - sigma_hat**2 / 2 )*tau + lambda_hat*mu_jhat*tau )
+    if args.mjd_new:
         mjd_mu = mu_jhat
         mjd_sigma = sigma_jhat
         mjd_lambda = lambda_hat
-        #R_t e^{\mu (t'-t)} e^{\lambda \tau ( e^{\mu_j + \frac{\sigma^2_j}{2}} - 1 ) }
-        return p_at * math.exp(mu_hat*(to-at)/3600) *math.exp( mjd_lambda  * ((to-at)/3600) * (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
+        ##R_t e^{\mu (t'-t)} e^{\lambda \tau ( e^{\mu_j + \frac{\sigma^2_j}{2}} - 1 ) }
+        return p_at * math.exp(mu_hat*tau) * math.exp( mjd_lambda  * tau * (math.exp( mjd_mu + mjd_sigma**2/2) - 1) )
     #if args.bs:
     # estimated by Black-Scholes formula
     #print(p_at, mu_hat, sigma_hat, to, at,(mu_hat-sigma_hat**2/2)*(to-at)/3600)
@@ -118,7 +120,7 @@ def compute_parameters(jump_criteria = 0.05, till=-1):
     diff_list = diff.tolist()
 
 
-    if args.mjd:
+    if args.mjd or args.mjd_new:
         max_jump=np.max(diff)
         log_string(swap_output, "Maximum of jumps: "+str(max_jump))
         log_string(swap_output, "Minimum of jumps: "+str(np.min(diff)))
@@ -405,7 +407,9 @@ log_string(xml_output, '<simulation>')
 for arg in vars(args):
     log_string(xml_output, '<'+arg+'>'+str(getattr(args, arg))+'</'+arg+'>')
 if args.mjd:
-    log_string(xml_output, '<predict_method>MJD</predict_method>')
+    log_string(xml_output, '<predict_method>MJD by Eq(11)</predict_method>')
+elif args.mjd_new:
+    log_string(xml_output, '<predict_method>MJD by Eq(10)</predict_method>')
 else:
     log_string(xml_output, '<predict_method>BS</predict_method>')
 swap_output = open("swap_output.txt", "w")
